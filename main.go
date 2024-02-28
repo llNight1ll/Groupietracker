@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/widget"
-	/* 	"fyne.io/fyne/app"
-	   	"fyne.io/fyne/widget" */)
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+)
 
 type GroupData struct {
 	ID           int      `json:"id"`
@@ -136,50 +137,94 @@ func main() {
 	for _, lct := range groupDataDates.Index {
 		dates = append(dates, lct.Dates)
 	}
-	var stringname []string
-	for i, group := range groupData {
-		fmt.Printf("ID: %d\n", group.ID)
-		fmt.Printf("Image: %s\n", group.Image)
-		fmt.Printf("Name: %s\n", group.Name)
-		fmt.Printf("Members: %v\n", group.Members)
-		fmt.Printf("Creation Date: %d\n", group.CreationDate)
-		fmt.Printf("First Album: %s\n", group.FirstAlbum)
-		fmt.Printf("Locations: %s\n", locations[i])
-		fmt.Printf("Concert Dates: %s\n", dates[i])
-		fmt.Printf("Relations: %s\n", group.Relations)
-		stringname = append(stringname, group.Name)
 
+	// Store names in a slice
+	var stringname []string
+	for _, group := range groupData {
+		stringname = append(stringname, group.Name)
 	}
+
 	a := app.New()
 	w := a.NewWindow("Hello")
 
 	hello := widget.NewLabel("Hello Fyne!")
-	w.SetContent(container.NewVBox(
+	w.Resize(fyne.NewSize(800, 600))
+
+	// Create the list inside the button callback
+	stringList := widget.NewList(
+		func() int {
+			return len(stringname)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(i widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			label.SetText(stringname[i])
+			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
+		},
+	)
+	content := container.NewVScroll(stringList)
+
+	search := widget.NewEntry()
+	searchButton := widget.NewButton("Rechercher", func() {
+		// Vérifier si stringList est nul
+		if w.Content == nil {
+			return
+		}
+		// Nouvelle liste pour les résultats de la recherche
+		filteredList := []string{}
+
+		// Parcourir la liste d'origine et ajouter les éléments correspondants à la nouvelle liste
+		for _, item := range stringname {
+			if strings.Contains(strings.ToLower(item), strings.ToLower(search.Text)) {
+				filteredList = append(filteredList, item)
+			}
+		}
+
+		// Mettre à jour la liste avec les résultats de la recherche
+		stringList.Length = func() int {
+			return len(filteredList)
+		}
+		stringList.CreateItem = func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		}
+		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
+			item.(*widget.Label).SetText(filteredList[index])
+		}
+		stringList.Refresh()
+	})
+	clearButton := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		search.SetText("")
+
+		// Mettre à jour la liste avec les résultats de la recherche
+		stringList.Length = func() int {
+			return len(stringname)
+		}
+		stringList.CreateItem = func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		}
+		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
+			item.(*widget.Label).SetText(stringname[index])
+		}
+		stringList.Refresh()
+	})
+
+	// Création d'une barre de recherche contenant une entrée de recherche, un bouton de recherche et un bouton de réinitialisation
+	searchBar := container.NewVBox(
+		search,
+		searchButton,
+		clearButton,
+	)
+	searchBar.Resize(fyne.NewSize(100, 200))
+
+	w.SetContent(container.NewVSplit(
 		hello,
-		widget.NewButton("Hi!", func() {
-			stringList := widget.NewList(
-				func() int {
-					return len(stringname)
-				},
-				func() fyne.CanvasObject {
-					return widget.NewLabel("")
-				},
-				func(i widget.ListItemID, obj fyne.CanvasObject) {
-					label := obj.(*widget.Label)
-					label.SetText(stringname[i])
-					label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
-				},
-			)
-
-			w.SetContent(container.NewVBox(
-				widget.NewLabel("Tableau de Strings"),
-				stringList,
-			))
-
-		}),
+		container.NewVSplit(
+			searchBar,
+			content,
+		),
 	))
 
 	w.ShowAndRun()
-	//Print the datas
-
 }
