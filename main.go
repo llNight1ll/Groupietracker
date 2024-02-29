@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -241,17 +242,31 @@ func main() {
 	})
 
 	card := container.NewVBox()
+
 	for _, group := range groupData {
+		var listmember string
+		for _, memb := range group.Members {
+			listmember += memb
+			listmember += "  "
+
+		}
 		name := canvas.NewText(group.Name, color.Black)
+		album := canvas.NewText(group.FirstAlbum, color.Black)
+		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
+		members := canvas.NewText(listmember, color.Black)
 
 		card.Add(
 			container.NewVBox(
 				name,
+				members,
+				album,
+				creationDate,
 			),
 		)
 	}
 
 	researchbar := container.NewVBox(
+		search,
 		searchButton,
 		clearButton,
 	)
