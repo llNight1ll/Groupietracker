@@ -3,11 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"image/color"
+	"log"
 	"net/http"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,8 +45,7 @@ type DatesData struct {
 
 type RelationData struct {
 	Index []struct {
-		ID    int      `json:"id"`
-		Dates []string `json:"datesLocations"`
+		DatesLocations map[string]interface{} `json:"datesLocations"`
 	} `json:"index"`
 }
 
@@ -98,8 +100,8 @@ func fetchDataD(apiURL string) (DatesData, error) {
 }
 
 func main() {
-	dateLocationMap := make(map[string][]string)
-	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1")
+	/* 	dateLocationMap := make(map[string][]string)
+	   	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1") */
 
 	//Get data from the artist API
 	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
@@ -124,6 +126,24 @@ func main() {
 		return
 	}
 
+	/* 	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
+	   	groupDataRelations, err := fetchDataR(apiURL4)
+	   	if err != nil {
+	   		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+	   		return
+	   	} */
+
+	relation, er := http.Get("https://groupietrackers.herokuapp.com/api/relation")
+	if er != nil {
+		log.Fatalf("Erreur lors de la lecture du JSON 1: %s", er)
+	}
+	defer relation.Body.Close()
+
+	var relations RelationData
+	if er := json.NewDecoder(relation.Body).Decode(&relations); er != nil {
+		log.Fatalf("Erreur lors de la lecture du JSON 2: %s", er)
+	}
+
 	//Store only the locations
 	var locations [][]string
 
@@ -137,20 +157,31 @@ func main() {
 	for _, lct := range groupDataDates.Index {
 		dates = append(dates, lct.Dates)
 	}
-
-	// Store names in a slice
 	var stringname []string
-	for _, group := range groupData {
+	var stringlocation [][]string
+	var stringdate [][]string
+	for i, group := range groupData {
+		fmt.Printf("ID: %d\n", group.ID)
+		fmt.Printf("Image: %s\n", group.Image)
+		fmt.Printf("Name: %s\n", group.Name)
+		fmt.Printf("Members: %v\n", group.Members)
+		fmt.Printf("Creation Date: %d\n", group.CreationDate)
+		fmt.Printf("First Album: %s\n", group.FirstAlbum)
+		/* 	fmt.Printf("Locations: %s\n", locations[i])
+		fmt.Printf("Concert Dates: %s\n", dates[i])
+		fmt.Printf("Relations: %s\n", group.Relations) */
+
+		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
+
 		stringname = append(stringname, group.Name)
+		stringlocation = append(stringlocation, locations[i])
+		stringdate = append(stringdate, dates[i])
+
 	}
 
 	a := app.New()
 	w := a.NewWindow("Hello")
 
-	hello := widget.NewLabel("Hello Fyne!")
-	w.Resize(fyne.NewSize(800, 600))
-
-	// Create the list inside the button callback
 	stringList := widget.NewList(
 		func() int {
 			return len(stringname)
@@ -164,7 +195,6 @@ func main() {
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
-	content := container.NewVScroll(stringList)
 
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
@@ -210,21 +240,31 @@ func main() {
 		stringList.Refresh()
 	})
 
-	// Création d'une barre de recherche contenant une entrée de recherche, un bouton de recherche et un bouton de réinitialisation
-	searchBar := container.NewVBox(
-		search,
+	card := container.NewVBox()
+	for _, group := range groupData {
+		name := canvas.NewText(group.Name, color.Black)
+
+		card.Add(
+			container.NewVBox(
+				name,
+			),
+		)
+	}
+
+	researchbar := container.NewVBox(
 		searchButton,
 		clearButton,
 	)
-	searchBar.Resize(fyne.NewSize(100, 200))
 
-	w.SetContent(container.NewVSplit(
-		hello,
-		container.NewVSplit(
-			searchBar,
-			content,
-		),
-	))
+	cardscroll := container.NewScroll(card)
+
+	cardscroll.SetMinSize(fyne.NewSize(675, 675))
+	researchbar.Add(cardscroll)
+	w.Resize(fyne.NewSize(800, 600))
+
+	w.SetContent(researchbar)
 
 	w.ShowAndRun()
+	//Print the datas
+
 }
