@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -100,9 +101,37 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	return data, nil
 }
 
+func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
+	// backButton := widget.NewButton("Retour", func() {
+	// 	w.SetContent(searchContainer) // Revenir à la liste de recherche
+	// })
+
+	for _, group := range groupData {
+		if group.ID == groupID {
+			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
+			artist := widget.NewLabel(group.Name)
+			album := widget.NewLabel(group.FirstAlbum)
+
+			// Créez un conteneur pour afficher les détails du groupe
+			groupDetails := container.NewVBox(
+				artist,
+				album,
+				// backButton,
+			)
+
+			// Placez les détails du groupe au centre de la fenêtre
+			content := container.NewBorder(nil, nil, nil, nil, groupDetails)
+			w.SetContent(content)
+			return
+		}
+	}
+}
+
+
 func main() {
 	/* 	dateLocationMap := make(map[string][]string)
 	   	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1") */
+		searchContainer := container.NewVBox()
 
 	//Get data from the artist API
 	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
@@ -181,7 +210,32 @@ func main() {
 	}
 
 	a := app.New()
-	w := a.NewWindow("Hello")
+	w := a.NewWindow("Groupie Tracker")
+
+	w.Resize(fyne.NewSize(1000, 600))
+
+	menu := fyne.NewMainMenu(
+		fyne.NewMenu("Quitter"),
+
+		// Theme de le la page
+		fyne.NewMenu("Thèmes",
+			fyne.NewMenuItem("Thèmes sombre", func() {
+				a.Settings().SetTheme(theme.DarkTheme())
+			}),
+
+			fyne.NewMenuItem("Thème clair", func() {
+				a.Settings().SetTheme(theme.LightTheme())
+			}),
+		),
+
+		fyne.NewMenu("En savoir plus",
+			fyne.NewMenuItem("Spotify", func() {
+				lien, _ := url.Parse("https://developer.spotify.com/documentation/embeds")
+				_ = a.OpenURL(lien)
+			}),
+		))
+
+	w.SetMainMenu(menu)
 
 	stringList := widget.NewList(
 		func() int {
@@ -241,6 +295,36 @@ func main() {
 		stringList.Refresh()
 	})
 
+	stringList.OnSelected = func(id widget.ListItemID) {
+		groupID := groupData[id].ID
+		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
+	}
+
+	searchButton.OnTapped = func() {
+		searchText := strings.ToLower(search.Text)
+		suggestions := make([]fyne.CanvasObject, 0)
+	
+		for _, group := range groupData {
+			if strings.Contains(strings.ToLower(group.Name), searchText) {
+				suggestion := widget.NewButton(group.Name, func(groupID int) func() {
+					return func() {
+						showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
+					}
+				}(group.ID))
+				suggestions = append(suggestions, suggestion)
+			}
+		}
+	
+		if len(suggestions) > 0 {
+			suggestionsContainer := container.NewVBox(suggestions...)
+			content := container.NewBorder(nil, nil, nil, nil, search)
+			content.Add(container.NewVScroll(suggestionsContainer))
+			w.SetContent(content)
+		} else {
+			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+		}
+	}
+
 	card := container.NewVBox()
 
 	for _, group := range groupData {
@@ -265,19 +349,24 @@ func main() {
 		)
 	}
 
+	cardscroll := container.NewScroll(card)
+	cardscroll.SetMinSize(fyne.NewSize(675, 675))
+
 	researchbar := container.NewVBox(
 		search,
 		searchButton,
 		clearButton,
 	)
 
-	cardscroll := container.NewScroll(card)
-
-	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 	researchbar.Add(cardscroll)
 	w.Resize(fyne.NewSize(800, 600))
 
-	w.SetContent(researchbar)
+	content := container.NewVSplit(
+		researchbar,
+		stringList,
+	)
+
+	w.SetContent(content)
 
 	w.ShowAndRun()
 	//Print the datas
