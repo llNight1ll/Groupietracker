@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
+	// "strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -103,21 +103,33 @@ func fetchDataD(apiURL string) (DatesData, error) {
 }
 
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
-	// backButton := widget.NewButton("Retour", func() {
-	// 	w.SetContent(searchContainer) // Revenir à la liste de recherche
-	// })
+	backButton := widget.NewButton("Retour", func() {
+		w.SetContent(searchContainer) // Revenir à la liste de recherche
+	})
 
 	for _, group := range groupData {
 		if group.ID == groupID {
 			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
 			artist := widget.NewLabel(group.Name)
+			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
 			album := widget.NewLabel(group.FirstAlbum)
+			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
+			imageURL := group.Image
+
+			r, _ := fyne.LoadResourceFromURLString(imageURL)
+			img := canvas.NewImageFromResource(r)
+			img.FillMode = canvas.ImageFillContain // Gestion du fill image
+			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
+			img.Resize(fyne.NewSize(120, 120))
 
 			// Créez un conteneur pour afficher les détails du groupe
 			groupDetails := container.NewVBox(
+				img,
 				artist,
+				members,
 				album,
-				// backButton,
+				creationDate,
+				backButton,
 			)
 
 			// Placez les détails du groupe au centre de la fenêtre
@@ -127,6 +139,14 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 		}
 	}
 }
+
+func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
+    nameLabel := widget.NewLabel(name)
+    return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
+        showGroupDetails(groupID, groupData, w, searchContainer, stringList)
+    }))
+}
+
 
 func main() {
 	searchContainer := container.NewVBox()
@@ -259,9 +279,9 @@ func main() {
 
 		}
 		name := canvas.NewText(group.Name, color.Black)
-		album := canvas.NewText(group.FirstAlbum, color.Black)
-		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
-		members := canvas.NewText(listmember, color.Black)
+		// album := canvas.NewText(group.FirstAlbum, color.Black)
+		// creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
+		// members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
 
 		r, _ := fyne.LoadResourceFromURLString(imageURL)
@@ -271,15 +291,15 @@ func main() {
 		img.Resize(fyne.NewSize(120, 120))
 
 		background := canvas.NewRectangle(color.RGBA{255, 0, 0, 255})
-		background.FillColor = color.RGBA{0, 0, 255, 255}
+		background.FillColor = color.RGBA{220, 220, 220, 255}
 
 		info := container.New(layout.NewVBoxLayout(),
 
 			img,
 			container.NewCenter(name),
-			container.NewCenter(members),
-			container.NewCenter(album),
-			container.NewCenter(creationDate),
+			// container.NewCenter(members),
+			// container.NewCenter(album),
+			// container.NewCenter(creationDate),
 		)
 
 		card.Add(
@@ -342,12 +362,15 @@ func main() {
 		suggestions := make([]fyne.CanvasObject, 0)
 
 		for _, group := range groupData {
+			imageURL := group.Image
+			r, _ := fyne.LoadResourceFromURLString(imageURL)
+			img := canvas.NewImageFromResource(r)
+			img.FillMode = canvas.ImageFillContain
+			img.SetMinSize(fyne.NewSize(50, 50))
+			img.Resize(fyne.NewSize(50, 50))
+
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
-				suggestion := widget.NewButton(group.Name, func(groupID int) func() {
-					return func() {
-						showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
-					}
-				}(group.ID))
+				suggestion := newPersonButton(group.Name, img, group.ID, groupData, w, searchContainer, stringList)
 				suggestions = append(suggestions, suggestion)
 			}
 		}
@@ -374,12 +397,14 @@ func main() {
 	researchbar.Add(cardscroll)
 	w.Resize(fyne.NewSize(800, 600))
 
-	content := container.NewVSplit(
-		researchbar,
-		stringList,
-	)
+	// content := container.NewVSplit(
+	// 	researchbar,
+	// 	stringList,
+	// )
 
-	w.SetContent(content)
+	// w.SetContent(content)
+	w.SetContent(container.NewVBox(searchContainer))
+	w.SetContent(researchbar)
 
 	w.ShowAndRun()
 	//Print the datas
