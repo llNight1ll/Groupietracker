@@ -102,6 +102,44 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	return data, nil
 }
 
+func calculateAverageColor(img *canvas.Image) {
+	// Obtention des dimensions de l'image
+	width := int(img.MinSize().Width)
+	height := int(img.MinSize().Height)
+
+	// Initialisation des valeurs de couleur moyenne
+
+	// Accès aux pixels de l'image
+
+	// Parcours de tous les pixels de l'image
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Récupération de la couleur du pixel
+			colorrr := img.Image.At(x, y)
+			colorToRGB(colorrr)
+		}
+	}
+
+	// Calcul des valeurs moyennes des composantes de couleur
+
+	// Retour de la couleur moyenne
+}
+
+func colorToRGB(c color.Color) (r, g, b, a uint8) {
+	switch c.(type) {
+	case color.RGBA:
+		rgba := c.(color.RGBA)
+		r, g, b, a = rgba.R, rgba.G, rgba.B, rgba.A
+	case color.RGBA64:
+		rgba64 := c.(color.RGBA64)
+		r, g, b, a = uint8(rgba64.R>>8), uint8(rgba64.G>>8), uint8(rgba64.B>>8), uint8(rgba64.A>>8)
+	default:
+		// Si le type de couleur n'est ni RGBA ni RGBA64, les composantes seront vides
+	}
+	return r, g, b, a
+}
+
+
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
 	backButton := widget.NewButton("Retour", func() {
 		w.SetContent(searchContainer) // Revenir à la liste de recherche
@@ -407,43 +445,5 @@ func main() {
 	w.SetContent(researchbar)
 
 	w.ShowAndRun()
-	//Print the datas
 
-}
-
-func calculateAverageColor(img *canvas.Image) {
-	// Obtention des dimensions de l'image
-	width := int(img.MinSize().Width)
-	height := int(img.MinSize().Height)
-
-	// Initialisation des valeurs de couleur moyenne
-
-	// Accès aux pixels de l'image
-
-	// Parcours de tous les pixels de l'image
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			// Récupération de la couleur du pixel
-			colorrr := img.Image.At(x, y)
-			colorToRGB(colorrr)
-		}
-	}
-
-	// Calcul des valeurs moyennes des composantes de couleur
-
-	// Retour de la couleur moyenne
-}
-
-func colorToRGB(c color.Color) (r, g, b, a uint8) {
-	switch c.(type) {
-	case color.RGBA:
-		rgba := c.(color.RGBA)
-		r, g, b, a = rgba.R, rgba.G, rgba.B, rgba.A
-	case color.RGBA64:
-		rgba64 := c.(color.RGBA64)
-		r, g, b, a = uint8(rgba64.R>>8), uint8(rgba64.G>>8), uint8(rgba64.B>>8), uint8(rgba64.A>>8)
-	default:
-		// Si le type de couleur n'est ni RGBA ni RGBA64, les composantes seront vides
-	}
-	return r, g, b, a
 }
