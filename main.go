@@ -7,7 +7,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	// "strconv"
+
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -102,44 +103,6 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	return data, nil
 }
 
-func calculateAverageColor(img *canvas.Image) {
-	// Obtention des dimensions de l'image
-	width := int(img.MinSize().Width)
-	height := int(img.MinSize().Height)
-
-	// Initialisation des valeurs de couleur moyenne
-
-	// Accès aux pixels de l'image
-
-	// Parcours de tous les pixels de l'image
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			// Récupération de la couleur du pixel
-			colorrr := img.Image.At(x, y)
-			colorToRGB(colorrr)
-		}
-	}
-
-	// Calcul des valeurs moyennes des composantes de couleur
-
-	// Retour de la couleur moyenne
-}
-
-func colorToRGB(c color.Color) (r, g, b, a uint8) {
-	switch c.(type) {
-	case color.RGBA:
-		rgba := c.(color.RGBA)
-		r, g, b, a = rgba.R, rgba.G, rgba.B, rgba.A
-	case color.RGBA64:
-		rgba64 := c.(color.RGBA64)
-		r, g, b, a = uint8(rgba64.R>>8), uint8(rgba64.G>>8), uint8(rgba64.B>>8), uint8(rgba64.A>>8)
-	default:
-		// Si le type de couleur n'est ni RGBA ni RGBA64, les composantes seront vides
-	}
-	return r, g, b, a
-}
-
-
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
 	backButton := widget.NewButton("Retour", func() {
 		w.SetContent(searchContainer) // Revenir à la liste de recherche
@@ -179,12 +142,11 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 }
 
 func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
-    nameLabel := widget.NewLabel(name)
-    return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
-        showGroupDetails(groupID, groupData, w, searchContainer, stringList)
-    }))
+	nameLabel := widget.NewLabel(name)
+	return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
+		showGroupDetails(groupID, groupData, w, searchContainer, stringList)
+	}))
 }
-
 
 func main() {
 	searchContainer := container.NewVBox()
@@ -317,27 +279,29 @@ func main() {
 
 		}
 		name := canvas.NewText(group.Name, color.Black)
-		// album := canvas.NewText(group.FirstAlbum, color.Black)
-		// creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
-		// members := canvas.NewText(listmember, color.Black)
+		album := canvas.NewText(group.FirstAlbum, color.Black)
+		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
+		members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
 
-		r, _ := fyne.LoadResourceFromURLString(imageURL)
-		img := canvas.NewImageFromResource(r)
+		l, _ := fyne.LoadResourceFromURLString(imageURL)
+		img := canvas.NewImageFromResource(l)
 		img.FillMode = canvas.ImageFillContain // Gestion du fill image
 		img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
 		img.Resize(fyne.NewSize(120, 120))
 
-		background := canvas.NewRectangle(color.RGBA{255, 0, 0, 255})
-		background.FillColor = color.RGBA{220, 220, 220, 255}
+		r, g, b, a := calculateAverageColor(img)
+
+		background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+		background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
 		info := container.New(layout.NewVBoxLayout(),
 
 			img,
 			container.NewCenter(name),
-			// container.NewCenter(members),
-			// container.NewCenter(album),
-			// container.NewCenter(creationDate),
+			container.NewCenter(members),
+			container.NewCenter(album),
+			container.NewCenter(creationDate),
 		)
 
 		card.Add(
@@ -445,5 +409,47 @@ func main() {
 	w.SetContent(researchbar)
 
 	w.ShowAndRun()
+	//Print the datas
 
+}
+
+func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
+
+	width := int(img.MinSize().Width)
+	height := int(img.MinSize().Height)
+	var rMoyenne uint32
+	var gMoyenne uint32
+	var bMoyenne uint32
+	var aMoyenne uint32
+	var j uint32
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+
+			colorrr := img.Image.At(x, y)
+			r, g, b, a := colorToRGB(colorrr)
+			rMoyenne += r
+			gMoyenne += g
+			bMoyenne += b
+			aMoyenne += a
+			j++
+
+		}
+	}
+	rMoyenne = rMoyenne / j
+	gMoyenne = gMoyenne / j
+	bMoyenne = bMoyenne / j
+	aMoyenne = aMoyenne / j
+
+	return rMoyenne, gMoyenne, bMoyenne, aMoyenne
+
+}
+
+func colorToRGB(c color.Color) (r, g, b, a uint32) {
+	r, g, b, a = c.RGBA()
+	r = r / 257
+	g = g / 257
+	b = b / 257
+	a = a / 257
+	return r, g, b, a
 }
