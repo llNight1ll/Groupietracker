@@ -6,14 +6,15 @@ import (
 	"image/color"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
-	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -127,11 +128,10 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-
 func main() {
+	searchContainer := container.NewVBox()
 	/* 	dateLocationMap := make(map[string][]string)
 	   	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1") */
-		searchContainer := container.NewVBox()
 
 	//Get data from the artist API
 	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
@@ -210,9 +210,7 @@ func main() {
 	}
 
 	a := app.New()
-	w := a.NewWindow("Groupie Tracker")
-
-	w.Resize(fyne.NewSize(1000, 600))
+	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
 		fyne.NewMenu("Quitter"),
@@ -250,6 +248,45 @@ func main() {
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
+
+	card := container.NewVBox()
+
+	for _, group := range groupData {
+		var listmember string
+		for _, memb := range group.Members {
+			listmember += memb
+			listmember += "  "
+
+		}
+		name := canvas.NewText(group.Name, color.Black)
+		album := canvas.NewText(group.FirstAlbum, color.Black)
+		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
+		members := canvas.NewText(listmember, color.Black)
+		imageURL := group.Image
+
+		r, _ := fyne.LoadResourceFromURLString(imageURL)
+		img := canvas.NewImageFromResource(r)
+		img.FillMode = canvas.ImageFillContain // Gestion du fill image
+		img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
+		img.Resize(fyne.NewSize(120, 120))
+
+		background := canvas.NewRectangle(color.RGBA{255, 0, 0, 255})
+		background.FillColor = color.RGBA{0, 0, 255, 255}
+
+		info := container.New(layout.NewVBoxLayout(),
+
+			img,
+			container.NewCenter(name),
+			container.NewCenter(members),
+			container.NewCenter(album),
+			container.NewCenter(creationDate),
+		)
+
+		card.Add(
+			container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info),
+		)
+
+	}
 
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
@@ -303,7 +340,7 @@ func main() {
 	searchButton.OnTapped = func() {
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
-	
+
 		for _, group := range groupData {
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestion := widget.NewButton(group.Name, func(groupID int) func() {
@@ -314,7 +351,7 @@ func main() {
 				suggestions = append(suggestions, suggestion)
 			}
 		}
-	
+
 		if len(suggestions) > 0 {
 			suggestionsContainer := container.NewVBox(suggestions...)
 			content := container.NewBorder(nil, nil, nil, nil, search)
@@ -323,30 +360,6 @@ func main() {
 		} else {
 			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 		}
-	}
-
-	card := container.NewVBox()
-
-	for _, group := range groupData {
-		var listmember string
-		for _, memb := range group.Members {
-			listmember += memb
-			listmember += "  "
-
-		}
-		name := canvas.NewText(group.Name, color.Black)
-		album := canvas.NewText(group.FirstAlbum, color.Black)
-		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
-		members := canvas.NewText(listmember, color.Black)
-
-		card.Add(
-			container.NewVBox(
-				name,
-				members,
-				album,
-				creationDate,
-			),
-		)
 	}
 
 	cardscroll := container.NewScroll(card)
@@ -371,4 +384,41 @@ func main() {
 	w.ShowAndRun()
 	//Print the datas
 
+}
+
+func calculateAverageColor(img *canvas.Image) {
+	// Obtention des dimensions de l'image
+	width := int(img.MinSize().Width)
+	height := int(img.MinSize().Height)
+
+	// Initialisation des valeurs de couleur moyenne
+
+	// Accès aux pixels de l'image
+
+	// Parcours de tous les pixels de l'image
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Récupération de la couleur du pixel
+			colorrr := img.Image.At(x, y)
+			colorToRGB(colorrr)
+		}
+	}
+
+	// Calcul des valeurs moyennes des composantes de couleur
+
+	// Retour de la couleur moyenne
+}
+
+func colorToRGB(c color.Color) (r, g, b, a uint8) {
+	switch c.(type) {
+	case color.RGBA:
+		rgba := c.(color.RGBA)
+		r, g, b, a = rgba.R, rgba.G, rgba.B, rgba.A
+	case color.RGBA64:
+		rgba64 := c.(color.RGBA64)
+		r, g, b, a = uint8(rgba64.R>>8), uint8(rgba64.G>>8), uint8(rgba64.B>>8), uint8(rgba64.A>>8)
+	default:
+		// Si le type de couleur n'est ni RGBA ni RGBA64, les composantes seront vides
+	}
+	return r, g, b, a
 }
