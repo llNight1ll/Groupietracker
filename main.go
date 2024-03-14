@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -100,7 +102,34 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	return data, nil
 }
 
+func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
+	// backButton := widget.NewButton("Retour", func() {
+	// 	w.SetContent(searchContainer) // Revenir à la liste de recherche
+	// })
+
+	for _, group := range groupData {
+		if group.ID == groupID {
+			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
+			artist := widget.NewLabel(group.Name)
+			album := widget.NewLabel(group.FirstAlbum)
+
+			// Créez un conteneur pour afficher les détails du groupe
+			groupDetails := container.NewVBox(
+				artist,
+				album,
+				// backButton,
+			)
+
+			// Placez les détails du groupe au centre de la fenêtre
+			content := container.NewBorder(nil, nil, nil, nil, groupDetails)
+			w.SetContent(content)
+			return
+		}
+	}
+}
+
 func main() {
+	searchContainer := container.NewVBox()
 	/* 	dateLocationMap := make(map[string][]string)
 	   	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1") */
 
@@ -183,6 +212,29 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Hello")
 
+	menu := fyne.NewMainMenu(
+		fyne.NewMenu("Quitter"),
+
+		// Theme de le la page
+		fyne.NewMenu("Thèmes",
+			fyne.NewMenuItem("Thèmes sombre", func() {
+				a.Settings().SetTheme(theme.DarkTheme())
+			}),
+
+			fyne.NewMenuItem("Thème clair", func() {
+				a.Settings().SetTheme(theme.LightTheme())
+			}),
+		),
+
+		fyne.NewMenu("En savoir plus",
+			fyne.NewMenuItem("Spotify", func() {
+				lien, _ := url.Parse("https://developer.spotify.com/documentation/embeds")
+				_ = a.OpenURL(lien)
+			}),
+		))
+
+	w.SetMainMenu(menu)
+
 	stringList := widget.NewList(
 		func() int {
 			return len(stringname)
@@ -196,6 +248,45 @@ func main() {
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
+
+	card := container.NewVBox()
+
+	for _, group := range groupData {
+		var listmember string
+		for _, memb := range group.Members {
+			listmember += memb
+			listmember += "  "
+
+		}
+		name := canvas.NewText(group.Name, color.Black)
+		album := canvas.NewText(group.FirstAlbum, color.Black)
+		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
+		members := canvas.NewText(listmember, color.Black)
+		imageURL := group.Image
+
+		r, _ := fyne.LoadResourceFromURLString(imageURL)
+		img := canvas.NewImageFromResource(r)
+		img.FillMode = canvas.ImageFillContain // Gestion du fill image
+		img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
+		img.Resize(fyne.NewSize(120, 120))
+
+		background := canvas.NewRectangle(color.RGBA{255, 0, 0, 255})
+		background.FillColor = color.RGBA{0, 0, 255, 255}
+
+		info := container.New(layout.NewVBoxLayout(),
+
+			img,
+			container.NewCenter(name),
+			container.NewCenter(members),
+			container.NewCenter(album),
+			container.NewCenter(creationDate),
+		)
+
+		card.Add(
+			container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info),
+		)
+
+	}
 
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
@@ -241,29 +332,38 @@ func main() {
 		stringList.Refresh()
 	})
 
-	card := container.NewVBox()
-
-	for _, group := range groupData {
-		var listmember string
-		for _, memb := range group.Members {
-			listmember += memb
-			listmember += "  "
-
-		}
-		name := canvas.NewText(group.Name, color.Black)
-		album := canvas.NewText(group.FirstAlbum, color.Black)
-		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
-		members := canvas.NewText(listmember, color.Black)
-
-		card.Add(
-			container.NewVBox(
-				name,
-				members,
-				album,
-				creationDate,
-			),
-		)
+	stringList.OnSelected = func(id widget.ListItemID) {
+		groupID := groupData[id].ID
+		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
 	}
+
+	searchButton.OnTapped = func() {
+		searchText := strings.ToLower(search.Text)
+		suggestions := make([]fyne.CanvasObject, 0)
+
+		for _, group := range groupData {
+			if strings.Contains(strings.ToLower(group.Name), searchText) {
+				suggestion := widget.NewButton(group.Name, func(groupID int) func() {
+					return func() {
+						showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
+					}
+				}(group.ID))
+				suggestions = append(suggestions, suggestion)
+			}
+		}
+
+		if len(suggestions) > 0 {
+			suggestionsContainer := container.NewVBox(suggestions...)
+			content := container.NewBorder(nil, nil, nil, nil, search)
+			content.Add(container.NewVScroll(suggestionsContainer))
+			w.SetContent(content)
+		} else {
+			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+		}
+	}
+
+	cardscroll := container.NewScroll(card)
+	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
 	researchbar := container.NewVBox(
 		search,
@@ -271,15 +371,54 @@ func main() {
 		clearButton,
 	)
 
-	cardscroll := container.NewScroll(card)
-
-	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 	researchbar.Add(cardscroll)
 	w.Resize(fyne.NewSize(800, 600))
 
-	w.SetContent(researchbar)
+	content := container.NewVSplit(
+		researchbar,
+		stringList,
+	)
+
+	w.SetContent(content)
 
 	w.ShowAndRun()
 	//Print the datas
 
+}
+
+func calculateAverageColor(img *canvas.Image) {
+	// Obtention des dimensions de l'image
+	width := int(img.MinSize().Width)
+	height := int(img.MinSize().Height)
+
+	// Initialisation des valeurs de couleur moyenne
+
+	// Accès aux pixels de l'image
+
+	// Parcours de tous les pixels de l'image
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Récupération de la couleur du pixel
+			colorrr := img.Image.At(x, y)
+			colorToRGB(colorrr)
+		}
+	}
+
+	// Calcul des valeurs moyennes des composantes de couleur
+
+	// Retour de la couleur moyenne
+}
+
+func colorToRGB(c color.Color) (r, g, b, a uint8) {
+	switch c.(type) {
+	case color.RGBA:
+		rgba := c.(color.RGBA)
+		r, g, b, a = rgba.R, rgba.G, rgba.B, rgba.A
+	case color.RGBA64:
+		rgba64 := c.(color.RGBA64)
+		r, g, b, a = uint8(rgba64.R>>8), uint8(rgba64.G>>8), uint8(rgba64.B>>8), uint8(rgba64.A>>8)
+	default:
+		// Si le type de couleur n'est ni RGBA ni RGBA64, les composantes seront vides
+	}
+	return r, g, b, a
 }
