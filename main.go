@@ -469,6 +469,11 @@ func main() {
 		search.Enable()
 	}
 
+	search.OnSubmitted = func(text string) {
+		// Lancer la recherche lorsque la touche "Entrer" est pressée
+		searchButton.OnTapped()
+	}
+
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
