@@ -141,13 +141,6 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
-	nameLabel := widget.NewLabel(name)
-	return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
-		showGroupDetails(groupID, groupData, w, searchContainer, stringList)
-	}))
-}
-
 func main() {
 	searchContainer := container.NewVBox()
 	/* 	dateLocationMap := make(map[string][]string)
@@ -233,7 +226,7 @@ func main() {
 	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
-		fyne.NewMenu("Quitter"),
+		// fyne.NewMenu("Quitter"),
 
 		// Theme de le la page
 		fyne.NewMenu("Thèmes",
@@ -257,14 +250,14 @@ func main() {
 
 	stringList := widget.NewList(
 		func() int {
-			return len(stringname)
+			return len(groupData)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("")
 		},
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
-			label.SetText(stringname[i])
+			label.SetText(fmt.Sprintf("%s (ID: %d)", groupData[i].Name, groupData[i].ID))
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
@@ -272,11 +265,11 @@ func main() {
 	card := container.NewVBox()
 
 	for _, group := range groupData {
+
 		var listmember string
 		for _, memb := range group.Members {
 			listmember += memb
 			listmember += "  "
-
 		}
 		name := canvas.NewText(group.Name, color.Black)
 		album := canvas.NewText(group.FirstAlbum, color.Black)
@@ -296,7 +289,6 @@ func main() {
 		background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
 		info := container.New(layout.NewVBoxLayout(),
-
 			img,
 			container.NewCenter(name),
 			container.NewCenter(members),
@@ -307,7 +299,6 @@ func main() {
 		card.Add(
 			container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info),
 		)
-
 	}
 
 	search := widget.NewEntry()
@@ -360,32 +351,52 @@ func main() {
 	}
 
 	searchButton.OnTapped = func() {
+		// Désactiver barre de recherche
+		search.Disable()
+	
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
-
+	
 		for _, group := range groupData {
 			imageURL := group.Image
-			r, _ := fyne.LoadResourceFromURLString(imageURL)
-			img := canvas.NewImageFromResource(r)
-			img.FillMode = canvas.ImageFillContain
-			img.SetMinSize(fyne.NewSize(50, 50))
-			img.Resize(fyne.NewSize(50, 50))
-
+	
+			l, _ := fyne.LoadResourceFromURLString(imageURL)
+			img := canvas.NewImageFromResource(l)
+			img.FillMode = canvas.ImageFillContain // Gestion du fill image
+			img.SetMinSize(fyne.NewSize(120, 120)) // Définir la taille minimum de l'image
+			img.Resize(fyne.NewSize(120, 120))
+	
+			// Créer un bouton personnalisé avec l'image et le nom du groupe
+			suggestion := widget.NewButton("", func(groupID int) func() {
+				return func() {
+					showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
+				}
+			}(group.ID))
+			suggestion.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
+			suggestion.SetIcon(l)
+			suggestion.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
+			suggestion.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
+	
+			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
-				suggestion := newPersonButton(group.Name, img, group.ID, groupData, w, searchContainer, stringList)
 				suggestions = append(suggestions, suggestion)
 			}
 		}
-
+	
 		if len(suggestions) > 0 {
+			a := container.NewVBox(search, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			content := container.NewBorder(nil, nil, nil, nil, search)
-			content.Add(container.NewVScroll(suggestionsContainer))
-			w.SetContent(content)
+			b := container.NewVBox(a, suggestionsContainer)
+			w.SetContent(container.NewVScroll(b))
 		} else {
+			// Afficher un message si aucune suggestion n'est trouvée
 			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 		}
+
+		//reactiver la barre de recherche
+		search.Enable()
 	}
+	
 
 	cardscroll := container.NewScroll(card)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
