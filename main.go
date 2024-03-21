@@ -8,10 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-<<<<<<< HEAD
-=======
-	"strconv"
->>>>>>> dccf02061af6dc8453c4e5428932ce2a913c768b
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -144,7 +140,6 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-<<<<<<< HEAD
 func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
 	nameLabel := widget.NewLabel(name)
 	return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
@@ -152,8 +147,6 @@ func newPersonButton(name string, img *canvas.Image, groupID int, groupData []Gr
 	}))
 }
 
-=======
->>>>>>> dccf02061af6dc8453c4e5428932ce2a913c768b
 func main() {
 	searchContainer := container.NewVBox()
 	/* 	dateLocationMap := make(map[string][]string)
@@ -239,11 +232,7 @@ func main() {
 	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
-<<<<<<< HEAD
 		fyne.NewMenu("Quitter"),
-=======
-		// fyne.NewMenu("Quitter"),
->>>>>>> dccf02061af6dc8453c4e5428932ce2a913c768b
 
 		// Theme de le la page
 		fyne.NewMenu("Thèmes",
@@ -267,14 +256,14 @@ func main() {
 
 	stringList := widget.NewList(
 		func() int {
-			return len(groupData)
+			return len(stringname)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("")
 		},
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
-			label.SetText(fmt.Sprintf("%s (ID: %d)", groupData[i].Name, groupData[i].ID))
+			label.SetText(stringname[i])
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
@@ -343,45 +332,6 @@ func main() {
 
 		listcard.Add(card)
 
-	}
-
-	card := container.NewVBox()
-
-	for _, group := range groupData {
-
-		var listmember string
-		for _, memb := range group.Members {
-			listmember += memb
-			listmember += "  "
-		}
-		name := canvas.NewText(group.Name, color.Black)
-		album := canvas.NewText(group.FirstAlbum, color.Black)
-		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
-		members := canvas.NewText(listmember, color.Black)
-		imageURL := group.Image
-
-		l, _ := fyne.LoadResourceFromURLString(imageURL)
-		img := canvas.NewImageFromResource(l)
-		img.FillMode = canvas.ImageFillContain // Gestion du fill image
-		img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
-		img.Resize(fyne.NewSize(120, 120))
-
-		r, g, b, a := calculateAverageColor(img)
-
-		background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
-		background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
-
-		info := container.New(layout.NewVBoxLayout(),
-			img,
-			container.NewCenter(name),
-			container.NewCenter(members),
-			container.NewCenter(album),
-			container.NewCenter(creationDate),
-		)
-
-		card.Add(
-			container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info),
-		)
 	}
 
 	search := widget.NewEntry()
@@ -482,57 +432,6 @@ func main() {
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
-	searchButton.OnTapped = func() {
-		// Désactiver barre de recherche
-		search.Disable()
-	
-		searchText := strings.ToLower(search.Text)
-		suggestions := make([]fyne.CanvasObject, 0)
-	
-		for _, group := range groupData {
-			imageURL := group.Image
-	
-			l, _ := fyne.LoadResourceFromURLString(imageURL)
-			img := canvas.NewImageFromResource(l)
-			img.FillMode = canvas.ImageFillContain // Gestion du fill image
-			img.SetMinSize(fyne.NewSize(120, 120)) // Définir la taille minimum de l'image
-			img.Resize(fyne.NewSize(120, 120))
-	
-			// Créer un bouton personnalisé avec l'image et le nom du groupe
-			suggestion := widget.NewButton("", func(groupID int) func() {
-				return func() {
-					showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
-				}
-			}(group.ID))
-			suggestion.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
-			suggestion.SetIcon(l)
-			suggestion.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
-			suggestion.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
-	
-			// Ajouter le bouton à la liste des suggestions
-			if strings.Contains(strings.ToLower(group.Name), searchText) {
-				suggestions = append(suggestions, suggestion)
-			}
-		}
-	
-		if len(suggestions) > 0 {
-			a := container.NewVBox(search, searchButton, clearButton)
-			suggestionsContainer := container.NewVBox(suggestions...)
-			b := container.NewVBox(a, suggestionsContainer)
-			w.SetContent(container.NewVScroll(b))
-		} else {
-			// Afficher un message si aucune suggestion n'est trouvée
-			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
-		}
-
-		//reactiver la barre de recherche
-		search.Enable()
-	}
-	
-
-	cardscroll := container.NewScroll(card)
-	cardscroll.SetMinSize(fyne.NewSize(675, 675))
-
 	researchbar := container.NewVBox(
 		search,
 		searchButton,
@@ -595,8 +494,4 @@ func colorToRGB(c color.Color) (r, g, b, a uint32) {
 	b = b / 257
 	a = a / 257
 	return r, g, b, a
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> dccf02061af6dc8453c4e5428932ce2a913c768b
