@@ -182,13 +182,6 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
-	nameLabel := widget.NewLabel(name)
-	return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
-		showGroupDetails(groupID, groupData, w, searchContainer, stringList)
-	}))
-}
-
 func main() {
 	searchContainer := container.NewVBox()
 	//Get data from the artist API
@@ -214,12 +207,12 @@ func main() {
 		return
 	}
 
-	/* 	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
-	   	groupDataRelations, err := fetchDataR(apiURL4)
-	   	if err != nil {
-	   		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-	   		return
-	   	} */
+	// apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
+	//    	groupDataRelations, err := fetchDataR(apiURL4)
+	//    	if err != nil {
+	//    		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+	//    		return
+	// }
 
 	relation, er := http.Get("https://groupietrackers.herokuapp.com/api/relation")
 	if er != nil {
@@ -271,7 +264,7 @@ func main() {
 	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
-		fyne.NewMenu("Quitter"),
+		// fyne.NewMenu("Quitter"),
 
 		// Theme de le la page
 		fyne.NewMenu("Thèmes",
@@ -284,6 +277,7 @@ func main() {
 			}),
 		),
 
+		//Spotify
 		fyne.NewMenu("En savoir plus",
 			fyne.NewMenuItem("Spotify", func() {
 				lien, _ := url.Parse("https://developer.spotify.com/documentation/embeds")
@@ -470,7 +464,6 @@ func main() {
 	}
 
 	search.OnSubmitted = func(text string) {
-		// Lancer la recherche lorsque la touche "Entrer" est pressée
 		searchButton.OnTapped()
 	}
 
