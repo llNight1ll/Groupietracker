@@ -52,8 +52,6 @@ type RelationData struct {
 	} `json:"index"`
 }
 
-var b *fyne.Container
-
 func fetchData(apiURL string) ([]GroupData, error) {
 	response, err := http.Get(apiURL)
 	if err != nil {
@@ -145,9 +143,10 @@ func colorToRGB(c color.Color) (r, g, b, a uint32) {
 	return r, g, b, a
 }
 
+
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
 	backButton := widget.NewButton("Retour", func() {
-		w.SetContent(container.NewVScroll(b)) // Revenir à la liste de recherche
+		w.SetContent(searchContainer) // Revenir à la liste de recherche
 	})
 
 	for _, group := range groupData {
@@ -397,9 +396,7 @@ func main() {
 		}
 		stringList.Refresh()
 	})
-	var clearButton *widget.Button
-
-	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+	clearButton := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		search.SetText("")
 
 		// Mettre à jour la liste avec les résultats de la recherche
@@ -413,21 +410,6 @@ func main() {
 			item.(*widget.Label).SetText(stringname[index])
 		}
 		stringList.Refresh()
-
-		cardscroll := container.NewScroll(listcard)
-		cardscroll.SetMinSize(fyne.NewSize(675, 675))
-
-		researchbar := container.NewVBox(
-			search,
-			searchButton,
-			clearButton,
-		)
-
-		researchbar.Add(cardscroll)
-		w.Resize(fyne.NewSize(800, 600))
-
-		w.SetContent(container.NewVBox(searchContainer))
-		w.SetContent(researchbar)
 	})
 
 	stringList.OnSelected = func(id widget.ListItemID) {
@@ -470,7 +452,7 @@ func main() {
 		if len(suggestions) > 0 {
 			a := container.NewVBox(search, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			b = container.NewVBox(a, suggestionsContainer)
+			b := container.NewVBox(a, suggestionsContainer)
 			w.SetContent(container.NewVScroll(b))
 		} else {
 			// Afficher un message si aucune suggestion n'est trouvée
