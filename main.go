@@ -143,9 +143,6 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 
 func main() {
 	searchContainer := container.NewVBox()
-	/* 	dateLocationMap := make(map[string][]string)
-	   	dateLocationMap["2024-02-04"] = append(dateLocationMap["2024-02-04"], "Location1") */
-
 	//Get data from the artist API
 	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
 	groupData, err := fetchData(apiURL)
@@ -257,7 +254,7 @@ func main() {
 		},
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
-			label.SetText(fmt.Sprintf("%s (ID: %d)", groupData[i].Name, groupData[i].ID))
+			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
@@ -410,18 +407,10 @@ func main() {
 	researchbar.Add(cardscroll)
 	w.Resize(fyne.NewSize(800, 600))
 
-	// content := container.NewVSplit(
-	// 	researchbar,
-	// 	stringList,
-	// )
-
-	// w.SetContent(content)
 	w.SetContent(container.NewVBox(searchContainer))
 	w.SetContent(researchbar)
 
 	w.ShowAndRun()
-	//Print the datas
-
 }
 
 func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
