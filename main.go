@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -103,6 +102,48 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	return data, nil
 }
 
+func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
+
+	width := int(img.MinSize().Width)
+	height := int(img.MinSize().Height)
+	var rMoyenne uint32
+	var gMoyenne uint32
+	var bMoyenne uint32
+	var aMoyenne uint32
+	var j uint32
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+
+			colorrr := img.Image.At(x, y)
+			r, g, b, a := colorToRGB(colorrr)
+			rMoyenne += r
+			gMoyenne += g
+			bMoyenne += b
+			aMoyenne += a
+			j++
+
+		}
+	}
+	rMoyenne = rMoyenne / j
+	gMoyenne = gMoyenne / j
+	bMoyenne = bMoyenne / j
+	aMoyenne = aMoyenne / j
+
+	return rMoyenne, gMoyenne, bMoyenne, aMoyenne
+
+}
+
+func colorToRGB(c color.Color) (r, g, b, a uint32) {
+	r, g, b, a = c.RGBA()
+	r = r / 257
+	g = g / 257
+	b = b / 257
+	a = a / 257
+	return r, g, b, a
+}
+
+
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
 	backButton := widget.NewButton("Retour", func() {
 		w.SetContent(searchContainer) // Revenir à la liste de recherche
@@ -139,6 +180,13 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 			return
 		}
 	}
+}
+
+func newPersonButton(name string, img *canvas.Image, groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) *fyne.Container {
+	nameLabel := widget.NewLabel(name)
+	return container.NewHBox(img, nameLabel, widget.NewButton("View Details", func() {
+		showGroupDetails(groupID, groupData, w, searchContainer, stringList)
+	}))
 }
 
 func main() {
@@ -223,7 +271,7 @@ func main() {
 	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
-		// fyne.NewMenu("Quitter"),
+		fyne.NewMenu("Quitter"),
 
 		// Theme de le la page
 		fyne.NewMenu("Thèmes",
@@ -247,7 +295,7 @@ func main() {
 
 	stringList := widget.NewList(
 		func() int {
-			return len(groupData)
+			return len(stringname)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("")
@@ -255,47 +303,75 @@ func main() {
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			label := obj.(*widget.Label)
 			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
+			label.SetText(stringname[i])
 			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
 		},
 	)
-
-	card := container.NewVBox()
-
+	var card *fyne.Container
+	var infoback *fyne.Container
+	listcard := container.NewVBox()
 	for _, group := range groupData {
-
 		var listmember string
 		for _, memb := range group.Members {
 			listmember += memb
 			listmember += "  "
+
 		}
 		name := canvas.NewText(group.Name, color.Black)
-		album := canvas.NewText(group.FirstAlbum, color.Black)
-		creationDate := canvas.NewText(strconv.Itoa(group.CreationDate), color.Black)
 		members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
 
 		l, _ := fyne.LoadResourceFromURLString(imageURL)
 		img := canvas.NewImageFromResource(l)
 		img.FillMode = canvas.ImageFillContain // Gestion du fill image
-		img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
-		img.Resize(fyne.NewSize(120, 120))
+		img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+		img.Resize(fyne.NewSize(200, 200))
 
 		r, g, b, a := calculateAverageColor(img)
 
 		background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 		background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
-		info := container.New(layout.NewVBoxLayout(),
-			img,
+		background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
+		background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
+		background.CornerRadius = 20                  // Définir les coins arrondis
+
+		background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
+		background2.FillColor = color.RGBA{255, 255, 255, 255}
+
+		background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
+		background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
+		background2.CornerRadius = 20                  // Définir les coins arrondis
+
+		iinfo := container.New(layout.NewVBoxLayout(),
 			container.NewCenter(name),
-			container.NewCenter(members),
-			container.NewCenter(album),
-			container.NewCenter(creationDate),
+			container.NewCenter(members))
+
+		infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
+
+		info := container.New(layout.NewVBoxLayout(),
+
+			img,
+			container.NewCenter(infoback),
 		)
 
-		card.Add(
-			container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info),
-		)
+		card = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
+
+		card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card                                               //
+
+		border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
+		border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
+		border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
+		border.StrokeColor = color.Black                 // Définir la couleur de la bordure
+		border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
+		border.CornerRadius = 20                         // Définir les coins
+
+		card.Add(border)
+
+		card.Resize(fyne.NewSize(100, 300))
+
+		listcard.Add(card)
+
 	}
 
 	search := widget.NewEntry()
@@ -346,23 +422,22 @@ func main() {
 		groupID := groupData[id].ID
 		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
 	}
-
 	searchButton.OnTapped = func() {
 		// Désactiver barre de recherche
 		search.Disable()
-	
+
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
-	
+
 		for _, group := range groupData {
 			imageURL := group.Image
-	
+
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
 			img.FillMode = canvas.ImageFillContain // Gestion du fill image
 			img.SetMinSize(fyne.NewSize(120, 120)) // Définir la taille minimum de l'image
 			img.Resize(fyne.NewSize(120, 120))
-	
+
 			// Créer un bouton personnalisé avec l'image et le nom du groupe
 			suggestion := widget.NewButton("", func(groupID int) func() {
 				return func() {
@@ -373,13 +448,13 @@ func main() {
 			suggestion.SetIcon(l)
 			suggestion.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
 			suggestion.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
-	
+
 			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, suggestion)
 			}
 		}
-	
+
 		if len(suggestions) > 0 {
 			a := container.NewVBox(search, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
@@ -393,9 +468,8 @@ func main() {
 		//reactiver la barre de recherche
 		search.Enable()
 	}
-	
 
-	cardscroll := container.NewScroll(card)
+	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
 	researchbar := container.NewVBox(
@@ -411,45 +485,4 @@ func main() {
 	w.SetContent(researchbar)
 
 	w.ShowAndRun()
-}
-
-func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
-
-	width := int(img.MinSize().Width)
-	height := int(img.MinSize().Height)
-	var rMoyenne uint32
-	var gMoyenne uint32
-	var bMoyenne uint32
-	var aMoyenne uint32
-	var j uint32
-
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-
-			colorrr := img.Image.At(x, y)
-			r, g, b, a := colorToRGB(colorrr)
-			rMoyenne += r
-			gMoyenne += g
-			bMoyenne += b
-			aMoyenne += a
-			j++
-
-		}
-	}
-	rMoyenne = rMoyenne / j
-	gMoyenne = gMoyenne / j
-	bMoyenne = bMoyenne / j
-	aMoyenne = aMoyenne / j
-
-	return rMoyenne, gMoyenne, bMoyenne, aMoyenne
-
-}
-
-func colorToRGB(c color.Color) (r, g, b, a uint32) {
-	r, g, b, a = c.RGBA()
-	r = r / 257
-	g = g / 257
-	b = b / 257
-	a = a / 257
-	return r, g, b, a
 }
