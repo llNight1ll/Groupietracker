@@ -407,6 +407,35 @@ func main() {
 		}
 		stringList.Refresh()
 	})
+
+	stringList.OnSelected = func(id widget.ListItemID) {
+		groupID := groupData[id].ID
+		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
+	}
+
+	sugg := container.NewVBox()
+	sugg2 := container.NewVScroll(sugg)
+	search.OnChanged = func(query string) {
+		searchText := strings.ToLower(query)
+		if len(query) > 0 {
+			sugg.Objects = make([]fyne.CanvasObject, 0)
+
+			for _, group := range groupData {
+				if strings.Contains(strings.ToLower(group.Name), searchText) {
+					sugg.Add(widget.NewLabel(group.Name))
+
+				}
+			}
+
+			sugg.Show()
+			sugg2.Show()
+		} else {
+			sugg.Hide()
+			sugg2.Hide()
+		}
+
+	}
+
 	var clearButton *widget.Button
 
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
@@ -423,27 +452,28 @@ func main() {
 			item.(*widget.Label).SetText(stringname[index])
 		}
 		stringList.Refresh()
-
 		cardscroll := container.NewScroll(listcard)
 		cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
+		sugg2 = container.NewVScroll(sugg)
+
+		sugg2.SetMinSize(fyne.NewSize(100, 100))
+		sugg2.Hide()
+
 		researchbar := container.NewVBox(
 			search,
+			sugg2,
 			searchButton,
 			clearButton,
 		)
 
 		researchbar.Add(cardscroll)
-		w.Resize(fyne.NewSize(800, 600))
 
 		w.SetContent(container.NewVBox(searchContainer))
 		w.SetContent(researchbar)
+
 	})
 
-	stringList.OnSelected = func(id widget.ListItemID) {
-		groupID := groupData[id].ID
-		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
-	}
 	searchButton.OnTapped = func() {
 		// Désactiver barre de recherche
 		search.Disable()
@@ -506,18 +536,25 @@ func main() {
 
 		//Afficher un message si la date et l'annee ne correspond à aucun artiste
 		if !verif {
-			w.SetContent(widget.NewLabel("Aucun artiste correspond à cette date"))
+			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r.Add(clearButton)
+			w.SetContent(r)
+			search.Enable()
+
 			return
 		}
 
 		if len(suggestions) > 0 {
-			a := container.NewVBox(search, searchButton, clearButton)
+			a := container.NewVBox(search, sugg2, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
 			b = container.NewVBox(a, suggestionsContainer)
 			w.SetContent(container.NewVScroll(b))
 		} else {
 			// Afficher un message si aucune suggestion n'est trouvée
-			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r.Add(clearButton)
+
+			w.SetContent(r)
 		}
 
 		//reactiver la barre de recherche
@@ -532,8 +569,14 @@ func main() {
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
+	sugg2 = container.NewVScroll(sugg)
+
+	sugg2.SetMinSize(fyne.NewSize(100, 100))
+	sugg2.Hide()
+
 	researchbar := container.NewVBox(
 		search,
+		sugg2,
 		searchButton,
 		clearButton,
 	)
