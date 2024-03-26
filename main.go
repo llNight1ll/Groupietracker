@@ -265,7 +265,6 @@ func main() {
 	w := a.NewWindow("Hello")
 
 	menu := fyne.NewMainMenu(
-		fyne.NewMenu("Quitter"),
 
 		// Theme de le la page
 		fyne.NewMenu("Thèmes",
@@ -351,7 +350,7 @@ func main() {
 
 		card = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
 
-		card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card                                               //
+		card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card
 
 		border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
 		border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
@@ -384,6 +383,14 @@ func main() {
 			}
 		}
 
+		for _, items := range stringdate {
+			for _, item := range items {
+				if strings.Contains(strings.ToLower(item), strings.ToLower(search.Text)) {
+					filteredList = append(filteredList, item)
+				}
+			}
+		}
+
 		// Mettre à jour la liste avec les résultats de la recherche
 		stringList.Length = func() int {
 			return len(filteredList)
@@ -393,6 +400,10 @@ func main() {
 		}
 		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
 			item.(*widget.Label).SetText(filteredList[index])
+		}
+
+		stringList.UpdateItem = func(index int, items fyne.CanvasObject) {
+			items.(*widget.Label).SetText(filteredList[index])
 		}
 		stringList.Refresh()
 	})
@@ -440,6 +451,7 @@ func main() {
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
 
+		verif := false
 		for _, group := range groupData {
 			imageURL := group.Image
 
@@ -463,7 +475,28 @@ func main() {
 			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, suggestion)
+				verif = true
 			}
+
+			if strings.Contains(fmt.Sprintf("%d", group.CreationDate), searchText) {
+				suggestions = append(suggestions, suggestion)
+				verif = true
+			}
+			// if strings.Contains(strings.ToLower(group.FirstAlbum), searchText) {
+			// 	suggestions = append(suggestions, suggestion)
+			// }
+
+			for _, date := range groupDataDates.Index {
+				if strings.Contains(strings.ToLower(date.Dates[0]), searchText) {
+					suggestions = append(suggestions, suggestion)
+					verif = true
+				}
+			}
+		}
+
+		if !verif {
+			w.SetContent(widget.NewLabel("Aucun artiste correspond à cette date"))
+			return
 		}
 
 		if len(suggestions) > 0 {
