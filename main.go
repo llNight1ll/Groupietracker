@@ -476,14 +476,24 @@ func main() {
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, suggestion)
 				verif = true
+			} else {
+				for _, member := range group.Members {
+					if strings.Contains(strings.ToLower(member), searchText) {
+						suggestions = append(suggestions, suggestion)
+						verif = true
+						break
+					}
+				}
 			}
 
 			if strings.Contains(fmt.Sprintf("%d", group.CreationDate), searchText) {
 				suggestions = append(suggestions, suggestion)
 				verif = true
 			}
+
 			// if strings.Contains(strings.ToLower(group.FirstAlbum), searchText) {
 			// 	suggestions = append(suggestions, suggestion)
+			// 	verif = true
 			// }
 
 			for _, date := range groupDataDates.Index {
@@ -494,6 +504,7 @@ func main() {
 			}
 		}
 
+		//Afficher un message si la date et l'annee ne correspond à aucun artiste
 		if !verif {
 			w.SetContent(widget.NewLabel("Aucun artiste correspond à cette date"))
 			return
