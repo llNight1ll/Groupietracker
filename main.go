@@ -52,7 +52,7 @@ type RelationData struct {
 	} `json:"index"`
 }
 
-var b *fyne.Container
+var wind *fyne.Container
 
 func fetchData(apiURL string) ([]GroupData, error) {
 	response, err := http.Get(apiURL)
@@ -145,9 +145,48 @@ func colorToRGB(c color.Color) (r, g, b, a uint32) {
 	return r, g, b, a
 }
 
-func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, stringList fyne.CanvasObject) {
+func showGroupDetails2(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container, window *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-		w.SetContent(container.NewVScroll(b)) // Revenir à la liste de recherche
+
+		w.SetContent(window)
+	})
+
+	for _, group := range groupData {
+		if group.ID == groupID {
+			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
+			artist := widget.NewLabel(group.Name)
+			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
+			album := widget.NewLabel(group.FirstAlbum)
+			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
+			imageURL := group.Image
+
+			r, _ := fyne.LoadResourceFromURLString(imageURL)
+			img := canvas.NewImageFromResource(r)
+			img.FillMode = canvas.ImageFillContain // Gestion du fill image
+			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
+			img.Resize(fyne.NewSize(120, 120))
+
+			// Créez un conteneur pour afficher les détails du groupe
+			groupDetails := container.NewVBox(
+				img,
+				artist,
+				members,
+				album,
+				creationDate,
+				backButton,
+			)
+
+			// Placez les détails du groupe au centre de la fenêtre
+			content := container.NewBorder(nil, nil, nil, nil, groupDetails)
+			w.SetContent(content)
+			return
+		}
+	}
+}
+
+func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container) {
+	backButton := widget.NewButton("Retour", func() {
+		w.SetContent(container.NewVScroll(wind)) // Revenir à la liste de recherche
 	})
 
 	for _, group := range groupData {
@@ -184,6 +223,7 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 }
 
 func main() {
+
 	searchContainer := container.NewVBox()
 	//Get data from the artist API
 	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
@@ -263,6 +303,8 @@ func main() {
 
 	a := app.New()
 	w := a.NewWindow("Hello")
+
+	var window *fyne.Container
 
 	menu := fyne.NewMainMenu(
 
@@ -407,6 +449,40 @@ func main() {
 		}
 		stringList.Refresh()
 	})
+
+	stringList.OnSelected = func(id widget.ListItemID) {
+		groupID := groupData[id].ID
+		showGroupDetails(groupID, groupData, w, searchContainer) // Passer la liste de recherche et la barre de recherche à la fonction
+	}
+
+	sugg := container.NewVBox()
+	sugg2 := container.NewVScroll(sugg)
+	search.OnChanged = func(query string) {
+		searchText := strings.ToLower(query)
+		if len(query) > 0 {
+			sugg.Objects = make([]fyne.CanvasObject, 0)
+
+			for _, group := range groupData {
+				if strings.Contains(strings.ToLower(group.Name), searchText) {
+					h := widget.NewButton(group.Name, func(groupID int) func() {
+						return func() {
+							showGroupDetails2(groupID, groupData, w, searchContainer, window) // Passer searchContainer à la fonction
+						}
+					}(group.ID))
+					sugg.Add(h)
+
+				}
+			}
+
+			sugg.Show()
+			sugg2.Show()
+		} else {
+			sugg.Hide()
+			sugg2.Hide()
+		}
+
+	}
+
 	var clearButton *widget.Button
 
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
@@ -423,27 +499,28 @@ func main() {
 			item.(*widget.Label).SetText(stringname[index])
 		}
 		stringList.Refresh()
-
 		cardscroll := container.NewScroll(listcard)
 		cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
+		sugg2 = container.NewVScroll(sugg)
+
+		sugg2.SetMinSize(fyne.NewSize(100, 100))
+		sugg2.Hide()
+
 		researchbar := container.NewVBox(
 			search,
+			sugg2,
 			searchButton,
 			clearButton,
 		)
 
 		researchbar.Add(cardscroll)
-		w.Resize(fyne.NewSize(800, 600))
 
 		w.SetContent(container.NewVBox(searchContainer))
 		w.SetContent(researchbar)
+
 	})
 
-	stringList.OnSelected = func(id widget.ListItemID) {
-		groupID := groupData[id].ID
-		showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer la liste de recherche et la barre de recherche à la fonction
-	}
 	searchButton.OnTapped = func() {
 		// Désactiver barre de recherche
 		search.Disable()
@@ -464,7 +541,7 @@ func main() {
 			// Créer un bouton personnalisé avec l'image et le nom du groupe
 			suggestion := widget.NewButton("", func(groupID int) func() {
 				return func() {
-					showGroupDetails(groupID, groupData, w, searchContainer, stringList) // Passer searchContainer à la fonction
+					showGroupDetails(groupID, groupData, w, searchContainer) // Passer searchContainer à la fonction
 				}
 			}(group.ID))
 			suggestion.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
@@ -506,18 +583,25 @@ func main() {
 
 		//Afficher un message si la date et l'annee ne correspond à aucun artiste
 		if !verif {
-			w.SetContent(widget.NewLabel("Aucun artiste correspond à cette date"))
+			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r.Add(clearButton)
+			w.SetContent(r)
+			search.Enable()
+
 			return
 		}
 
 		if len(suggestions) > 0 {
-			a := container.NewVBox(search, searchButton, clearButton)
+			rsrch := container.NewVBox(search, sugg2, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			b = container.NewVBox(a, suggestionsContainer)
-			w.SetContent(container.NewVScroll(b))
+			wind = container.NewVBox(rsrch, suggestionsContainer)
+			w.SetContent(container.NewVScroll(wind))
 		} else {
 			// Afficher un message si aucune suggestion n'est trouvée
-			w.SetContent(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
+			r.Add(clearButton)
+
+			w.SetContent(r)
 		}
 
 		//reactiver la barre de recherche
@@ -532,8 +616,14 @@ func main() {
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
+	sugg2 = container.NewVScroll(sugg)
+
+	sugg2.SetMinSize(fyne.NewSize(100, 100))
+	sugg2.Hide()
+
 	researchbar := container.NewVBox(
 		search,
+		sugg2,
 		searchButton,
 		clearButton,
 	)
@@ -541,8 +631,10 @@ func main() {
 	researchbar.Add(cardscroll)
 	w.Resize(fyne.NewSize(800, 600))
 
-	w.SetContent(container.NewVBox(searchContainer))
-	w.SetContent(researchbar)
+	window = container.NewVBox(searchContainer)
+	window.Add(researchbar)
+
+	w.SetContent(window)
 
 	w.ShowAndRun()
 }
