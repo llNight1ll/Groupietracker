@@ -302,7 +302,7 @@ func main() {
 	}
 
 	a := app.New()
-	w := a.NewWindow("Hello")
+	w := a.NewWindow("Groupie Tracker")
 
 	var window *fyne.Container
 
@@ -409,6 +409,45 @@ func main() {
 
 	}
 
+	var checkboxFilters []*widget.Check
+
+	// Créer les cases à cocher pour les filtres
+	for i := 2; i <= 5; i++ {
+		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
+			return func(checked bool) {
+				// Ajouter votre logique de traitement ici en fonction de l'état de la case à cocher
+				fmt.Printf("%d membres: %t\n", members, checked)
+			}
+		}(i))
+		checkboxFilters = append(checkboxFilters, checkbox)
+	}
+
+	checkboxContainer := container.NewVBox()
+	for _, checkbox := range checkboxFilters {
+		checkboxContainer.Add(checkbox)
+	}
+
+	selectedMembers := make(map[int]bool)
+    for i, checkbox := range checkboxFilters {
+        if checkbox.Checked {
+            selectedMembers[i+2] = true
+        }
+    }
+
+    // Filtrer les résultats en fonction des membres sélectionnés
+    filteredResults := make([]GroupData, 0)
+    for _, group := range groupData {
+        if len(selectedMembers) == 0 {
+            // Aucun filtre sélectionné, ajoutez simplement tous les résultats
+            filteredResults = append(filteredResults, group)
+        } else {
+            // Vérifiez si le groupe a le nombre de membres sélectionné
+            if selectedMembers[len(group.Members)] {
+                filteredResults = append(filteredResults, group)
+            }
+        }
+    }
+
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
 		// Vérifier si stringList est nul
@@ -443,7 +482,6 @@ func main() {
 		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
 			item.(*widget.Label).SetText(filteredList[index])
 		}
-
 		stringList.UpdateItem = func(index int, items fyne.CanvasObject) {
 			items.(*widget.Label).SetText(filteredList[index])
 		}
@@ -527,11 +565,14 @@ func main() {
 
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
+		
 
 		verif := false
 		for _, group := range groupData {
+			if len(selectedMembers) > 0 && !selectedMembers[len(group.Members)] {
+				continue // Si le nombre de membres n'est pas sélectionné, passer au prochain groupe
+			}
 			imageURL := group.Image
-
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
 			img.FillMode = canvas.ImageFillContain // Gestion du fill image
@@ -623,6 +664,7 @@ func main() {
 
 	researchbar := container.NewVBox(
 		search,
+		checkboxContainer,
 		sugg2,
 		searchButton,
 		clearButton,
