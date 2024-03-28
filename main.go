@@ -464,16 +464,33 @@ func main() {
 
 			for _, group := range groupData {
 				if strings.Contains(strings.ToLower(group.Name), searchText) {
-					h := widget.NewButton(group.Name, func(groupID int) func() {
+					label := group.Name + "        - Groupe"
+					h := widget.NewButton(label, func(groupID int) func() {
 						return func() {
 							showGroupDetails2(groupID, groupData, w, searchContainer, window) // Passer searchContainer à la fonction
 						}
 					}(group.ID))
+					h.Importance = widget.LowImportance
 					sugg.Add(h)
 
 				}
-			}
+				for _, groupMember := range group.Members {
+					if strings.Contains(strings.ToLower(groupMember), searchText) {
+						label2 := groupMember + "         - Member"
+						h := widget.NewButton(label2, func(groupID int) func() {
+							return func() {
+								showGroupDetails2(groupID, groupData, w, searchContainer, window) // Passer searchContainer à la fonction
+							}
 
+						}(group.ID))
+						h.Importance = widget.LowImportance
+
+						sugg.Add(h)
+
+					}
+				}
+
+			}
 			sugg.Show()
 			sugg2.Show()
 		} else {
@@ -620,10 +637,13 @@ func main() {
 
 	sugg2.SetMinSize(fyne.NewSize(100, 100))
 	sugg2.Hide()
+	spacer := layout.NewSpacer()
+	sugg3 := container.NewHBox(sugg2, spacer)
+	spacer.Resize(fyne.NewSize(100, 200))
 
 	researchbar := container.NewVBox(
 		search,
-		sugg2,
+		sugg3,
 		searchButton,
 		clearButton,
 	)
