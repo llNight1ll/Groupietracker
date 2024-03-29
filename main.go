@@ -222,6 +222,7 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
+
 func main() {
 
 	searchContainer := container.NewVBox()
@@ -412,7 +413,7 @@ func main() {
 	var checkboxFilters []*widget.Check
 
 	// Créer les cases à cocher pour les filtres
-	for i := 2; i <= 5; i++ {
+	for i := 2; i <= 6; i++ {
 		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
 			return func(checked bool) {
 				// Ajouter votre logique de traitement ici en fonction de l'état de la case à cocher
@@ -422,7 +423,9 @@ func main() {
 		checkboxFilters = append(checkboxFilters, checkbox)
 	}
 
-	checkboxContainer := container.NewVBox()
+	checkboxContainer := container.NewHBox()
+	label := widget.NewLabel("Nombre de membres:")
+	checkboxContainer.Add(label)
 	for _, checkbox := range checkboxFilters {
 		checkboxContainer.Add(checkbox)
 	}
@@ -511,7 +514,6 @@ func main() {
 
 				}
 			}
-
 			sugg.Show()
 			sugg2.Show()
 		} else {
@@ -537,6 +539,16 @@ func main() {
 			item.(*widget.Label).SetText(stringname[index])
 		}
 		stringList.Refresh()
+
+		// Réinitialiser les filtres sélectionnés
+		for _, checkbox := range checkboxFilters {
+			checkbox.Checked = false
+		}
+	
+		// Réinitialiser les résultats filtrés
+		filteredResults := make([]GroupData, len(groupData))
+		copy(filteredResults, groupData)
+
 		cardscroll := container.NewScroll(listcard)
 		cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
@@ -546,6 +558,7 @@ func main() {
 		sugg2.Hide()
 
 		researchbar := container.NewVBox(
+			checkboxContainer,
 			search,
 			sugg2,
 			searchButton,
@@ -555,23 +568,65 @@ func main() {
 		researchbar.Add(cardscroll)
 
 		w.SetContent(container.NewVBox(searchContainer))
-		w.SetContent(researchbar)
+		wind = container.NewVBox(researchbar)
+    	w.SetContent(container.NewVScroll(wind))
 
 	})
 
+	
 	searchButton.OnTapped = func() {
 		// Désactiver barre de recherche
 		search.Disable()
 
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
-		
+
+		// Vérifier si un filtre est sélectionné
+		Check := false
+		selectedMembers := make(map[int]bool)
+		for i, checkbox := range checkboxFilters {
+			if checkbox.Checked {
+				Check = true
+				selectedMembers[i+2] = true
+			}
+		}
+
+		// Filtrer les résultats en fonction des membres sélectionnés ou récupérer tous les groupes si aucune case à cocher n'est cochée
+		if Check {
+			// Filtrer les résultats en fonction des membres sélectionnés
+			filteredResults := make([]GroupData, 0)
+			for _, group := range groupData {
+				if len(selectedMembers) == 0 {
+					// Aucun filtre sélectionné, ajoutez simplement tous les résultats
+					filteredResults = append(filteredResults, group)
+				} else {
+					// Vérifiez si le groupe a le nombre de membres sélectionné
+					if selectedMembers[len(group.Members)] {
+						filteredResults = append(filteredResults, group)
+					}
+				}
+			}
+			// Utiliser les résultats filtrés pour la recherche
+			groupData = filteredResults
+		}
+
+
+		filteredGroupButtons := make([]fyne.CanvasObject, 0)
+		for _, group := range groupData {
+			// Créer un bouton personnalisé avec le nom du groupe
+			groupButton := widget.NewButton(group.Name, func(groupID int) func() {
+				return func() {
+					showGroupDetails(groupID, groupData, w, searchContainer) // Passer searchContainer à la fonction
+				}
+			}(group.ID))
+			groupButton.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
+
+			// Ajouter le bouton à la liste des boutons de groupe filtrés
+			filteredGroupButtons = append(filteredGroupButtons, groupButton)
+		}
 
 		verif := false
 		for _, group := range groupData {
-			if len(selectedMembers) > 0 && !selectedMembers[len(group.Members)] {
-				continue // Si le nombre de membres n'est pas sélectionné, passer au prochain groupe
-			}
 			imageURL := group.Image
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
@@ -589,7 +644,6 @@ func main() {
 			suggestion.SetIcon(l)
 			suggestion.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
 			suggestion.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
-
 			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, suggestion)
@@ -634,14 +688,14 @@ func main() {
 
 		if len(suggestions) > 0 {
 			rsrch := container.NewVBox(search, sugg2, searchButton, clearButton)
+			filtrebox := container.NewVBox(filteredGroupButtons...)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			wind = container.NewVBox(rsrch, suggestionsContainer)
+			wind = container.NewVBox(rsrch, filtrebox, suggestionsContainer)
 			w.SetContent(container.NewVScroll(wind))
 		} else {
 			// Afficher un message si aucune suggestion n'est trouvée
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
-
 			w.SetContent(r)
 		}
 
@@ -663,8 +717,8 @@ func main() {
 	sugg2.Hide()
 
 	researchbar := container.NewVBox(
-		search,
 		checkboxContainer,
+		search,
 		sugg2,
 		searchButton,
 		clearButton,
