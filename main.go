@@ -394,6 +394,12 @@ func main() {
 		heartButton.SetIcon(heartOffImage)
 		heartButton.Importance = widget.LowImportance
 
+		viewDetail := widget.NewButton("View Detail", func() {
+
+			showGroupDetails2(group.ID, groupData, w, searchContainer, window)
+
+		})
+
 		l, _ := fyne.LoadResourceFromURLString(imageURL)
 		img := canvas.NewImageFromResource(l)
 		img.FillMode = canvas.ImageFillContain // Gestion du fill image
@@ -419,7 +425,8 @@ func main() {
 		iinfo := container.New(layout.NewVBoxLayout(),
 			container.NewCenter(name),
 			container.NewCenter(members),
-			heartButton)
+			heartButton,
+			viewDetail)
 
 		infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
 
@@ -539,7 +546,96 @@ func main() {
 		}
 
 	}
+	favoris := widget.NewButton("Favoris", func() {
+		var fg []string
+		var favoritCard *fyne.Container
+		favoritMenu := container.NewVBox()
+		for _, favorisGroup := range listFavorit {
 
+			for _, group := range groupData {
+				if favorisGroup == group.Name {
+					var listmember string
+					for _, memb := range group.Members {
+						listmember += memb
+						listmember += "  "
+
+					}
+					name := canvas.NewText(group.Name, color.Black)
+					members := canvas.NewText(listmember, color.Black)
+					imageURL := group.Image
+
+					l, _ := fyne.LoadResourceFromURLString(imageURL)
+					img := canvas.NewImageFromResource(l)
+					img.FillMode = canvas.ImageFillContain // Gestion du fill image
+					img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+					img.Resize(fyne.NewSize(200, 200))
+
+					r, g, b, a := calculateAverageColor(img)
+
+					background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+					background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+
+					background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
+					background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
+					background.CornerRadius = 20                  // Définir les coins arrondis
+
+					background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
+					background2.FillColor = color.RGBA{255, 255, 255, 255}
+
+					background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
+					background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
+					background2.CornerRadius = 20                  // Définir les coins arrondis
+
+					iinfo := container.New(layout.NewVBoxLayout(),
+						container.NewCenter(name),
+						container.NewCenter(members))
+
+					infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
+
+					info := container.New(layout.NewVBoxLayout(),
+
+						img,
+						container.NewCenter(infoback),
+					)
+
+					favoritCard = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
+
+					favoritCard.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card
+
+					border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
+					border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
+					border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
+					border.StrokeColor = color.Black                 // Définir la couleur de la bordure
+					border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
+					border.CornerRadius = 20                         // Définir les coins
+
+					favoritCard.Add(border)
+
+					favoritCard.Resize(fyne.NewSize(100, 300))
+
+					favoritMenu.Add(favoritCard)
+					fg = append(fg, group.Name)
+
+				}
+			}
+
+		}
+		fmt.Println(fg)
+		backButton := widget.NewButton("Retour", func() {
+
+			w.SetContent(window)
+		})
+
+		favoritCardScroll := container.NewScroll(favoritMenu)
+		favoritCardScroll.SetMinSize(fyne.NewSize(675, 675))
+
+		favoritPage := container.NewVBox(
+			backButton,
+			favoritCardScroll)
+
+		w.SetContent(favoritPage)
+
+	})
 	var clearButton *widget.Button
 
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
@@ -572,6 +668,7 @@ func main() {
 		spacer.Resize(fyne.NewSize(100, 200))
 
 		researchbar := container.NewVBox(
+			favoris,
 			search,
 			sugg3,
 			searchButton,
@@ -766,96 +863,6 @@ func main() {
 		}
 
 	}
-	favoris := widget.NewButton("Favoris", func() {
-		var fg []string
-		var favoritCard *fyne.Container
-		favoritMenu := container.NewVBox()
-		for _, favorisGroup := range listFavorit {
-
-			for _, group := range groupData {
-				if favorisGroup == group.Name {
-					var listmember string
-					for _, memb := range group.Members {
-						listmember += memb
-						listmember += "  "
-
-					}
-					name := canvas.NewText(group.Name, color.Black)
-					members := canvas.NewText(listmember, color.Black)
-					imageURL := group.Image
-
-					l, _ := fyne.LoadResourceFromURLString(imageURL)
-					img := canvas.NewImageFromResource(l)
-					img.FillMode = canvas.ImageFillContain // Gestion du fill image
-					img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
-					img.Resize(fyne.NewSize(200, 200))
-
-					r, g, b, a := calculateAverageColor(img)
-
-					background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
-					background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
-
-					background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
-					background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
-					background.CornerRadius = 20                  // Définir les coins arrondis
-
-					background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
-					background2.FillColor = color.RGBA{255, 255, 255, 255}
-
-					background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
-					background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
-					background2.CornerRadius = 20                  // Définir les coins arrondis
-
-					iinfo := container.New(layout.NewVBoxLayout(),
-						container.NewCenter(name),
-						container.NewCenter(members))
-
-					infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
-
-					info := container.New(layout.NewVBoxLayout(),
-
-						img,
-						container.NewCenter(infoback),
-					)
-
-					favoritCard = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
-
-					favoritCard.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card
-
-					border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
-					border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
-					border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
-					border.StrokeColor = color.Black                 // Définir la couleur de la bordure
-					border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
-					border.CornerRadius = 20                         // Définir les coins
-
-					favoritCard.Add(border)
-
-					favoritCard.Resize(fyne.NewSize(100, 300))
-
-					favoritMenu.Add(favoritCard)
-					fg = append(fg, group.Name)
-
-				}
-			}
-
-		}
-		fmt.Println(fg)
-		backButton := widget.NewButton("Retour", func() {
-
-			w.SetContent(window)
-		})
-
-		favoritCardScroll := container.NewScroll(favoritMenu)
-		favoritCardScroll.SetMinSize(fyne.NewSize(675, 675))
-
-		favoritPage := container.NewVBox(
-			backButton,
-			favoritCardScroll)
-
-		w.SetContent(favoritPage)
-
-	})
 
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
