@@ -362,6 +362,27 @@ func main() {
 		name := canvas.NewText(group.Name, color.Black)
 		members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
+		heartOnImage, _ := fyne.LoadResourceFromPath("./heartOn.png")
+
+		heartOffImage, _ := fyne.LoadResourceFromPath("./heartOff.png")
+
+		// Créer un booléen pour suivre l'état du bouton
+		var isPressed bool
+		var heartButton *widget.Button
+		// Créer un bouton avec l'image initiale du cœur
+		heartButton = widget.NewButton("", func() {
+
+			// Inverser l'état lors du clic sur le bouton
+			isPressed = !isPressed
+			// Mettre à jour l'image du bouton en fonction de l'état
+			if isPressed {
+				heartButton.SetIcon(heartOnImage)
+			} else {
+				heartButton.SetIcon(heartOffImage)
+			}
+		})
+		heartButton.SetIcon(heartOffImage)
+		heartButton.Importance = widget.LowImportance
 
 		l, _ := fyne.LoadResourceFromURLString(imageURL)
 		img := canvas.NewImageFromResource(l)
@@ -387,7 +408,8 @@ func main() {
 
 		iinfo := container.New(layout.NewVBoxLayout(),
 			container.NewCenter(name),
-			container.NewCenter(members))
+			container.NewCenter(members),
+			heartButton)
 
 		infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
 
