@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/color"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -52,7 +51,16 @@ type RelationData struct {
 	} `json:"index"`
 }
 
+var listFavorit []string
 var wind222 *fyne.Container
+var card *fyne.Container
+var infoback *fyne.Container
+var listcard *fyne.Container
+var def *fyne.Container
+var window *fyne.Container
+var w fyne.Window
+var searchContainer *fyne.Container
+var upperUI *fyne.Container
 
 func fetchData(apiURL string) ([]GroupData, error) {
 	response, err := http.Get(apiURL)
@@ -102,6 +110,23 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	}
 
 	return data, nil
+}
+
+func fetchDataR(apiURL string) (RelationData, error) {
+	var relations RelationData
+
+	response, err := http.Get(apiURL)
+	if err != nil {
+		return relations, err
+	}
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(&relations)
+	if err != nil {
+		return relations, err
+	}
+	return relations, nil
+
 }
 
 func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
@@ -222,95 +247,7 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-func main() {
-
-	searchContainer := container.NewVBox()
-	//Get data from the artist API
-	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
-	groupData, err := fetchData(apiURL)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	//Get data from locations API
-	apiURL2 := "https://groupietrackers.herokuapp.com/api/locations"
-	groupDataLocations, err := fetchDataL(apiURL2)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	apiURL3 := "https://groupietrackers.herokuapp.com/api/dates"
-	groupDataDates, err := fetchDataD(apiURL3)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	/* 	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
-	   	groupDataRelations, err := fetchDataR(apiURL4)
-	   	if err != nil {
-	   		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-	   		return
-	   	} */
-
-	relation, er := http.Get("https://groupietrackers.herokuapp.com/api/relation")
-	if er != nil {
-		log.Fatalf("Erreur lors de la lecture du JSON 1: %s", er)
-	}
-	defer relation.Body.Close()
-
-	var relations RelationData
-	if er := json.NewDecoder(relation.Body).Decode(&relations); er != nil {
-		log.Fatalf("Erreur lors de la lecture du JSON 2: %s", er)
-	}
-
-	//Store only the locations
-	var locations [][]string
-
-	for _, lct := range groupDataLocations.Index {
-		locations = append(locations, lct.Locations)
-	}
-
-	//Store only the locations
-	var dates [][]string
-
-	for _, lct := range groupDataDates.Index {
-		dates = append(dates, lct.Dates)
-	}
-	var stringname []string
-	var stringlocation [][]string
-	var stringdate [][]string
-	for i, group := range groupData {
-		fmt.Printf("ID: %d\n", group.ID)
-		fmt.Printf("Image: %s\n", group.Image)
-		fmt.Printf("Name: %s\n", group.Name)
-		fmt.Printf("Members: %v\n", group.Members)
-		fmt.Printf("Creation Date: %d\n", group.CreationDate)
-		fmt.Printf("First Album: %s\n", group.FirstAlbum)
-		/* 	fmt.Printf("Locations: %s\n", locations[i])
-		fmt.Printf("Concert Dates: %s\n", dates[i])
-		fmt.Printf("Relations: %s\n", group.Relations) */
-
-		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
-
-		stringname = append(stringname, group.Name)
-		stringlocation = append(stringlocation, locations[i])
-		stringdate = append(stringdate, dates[i])
-
-	}
-
-	a := app.New()
-	w := a.NewWindow("Hello")
-
-	slider := widget.NewSlider(1900, 2024)
-
-	// Étiquette pour afficher la valeur actuelle du slider
-	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
-
-	var window *fyne.Container
-
+func makeMenu(a fyne.App) *fyne.MainMenu {
 	menu := fyne.NewMainMenu(
 
 		// Theme de le la page
@@ -331,29 +268,10 @@ func main() {
 			}),
 		),
 	)
+	return menu
+}
 
-	w.SetMainMenu(menu)
-
-	stringList := widget.NewList(
-		func() int {
-			return len(stringname)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("")
-		},
-		func(i widget.ListItemID, obj fyne.CanvasObject) {
-			label := obj.(*widget.Label)
-			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
-			label.SetText(stringname[i])
-			label.Resize(label.MinSize().Add(fyne.NewSize(100, 100))) // Largeur de 100 pixels
-		},
-	)
-	var card *fyne.Container
-	var infoback *fyne.Container
-	var listFavorit []string
-	listcard := container.NewVBox()
-	def := container.NewVBox()
-
+func makeListCard(card *fyne.Container, infoback *fyne.Container, listcard *fyne.Container, def *fyne.Container, groupData []GroupData) {
 	for _, group := range groupData {
 		var listmember string
 		for _, memb := range group.Members {
@@ -372,6 +290,7 @@ func main() {
 		var isPressed bool
 		var heartButton *widget.Button
 		// Créer un bouton avec l'image initiale du cœur
+
 		heartButton = widget.NewButton("", func() {
 
 			// Inverser l'état lors du clic sur le bouton
@@ -389,7 +308,7 @@ func main() {
 					}
 				}
 			}
-			fmt.Println(listFavorit)
+
 		})
 		heartButton.SetIcon(heartOffImage)
 		heartButton.Importance = widget.LowImportance
@@ -456,6 +375,28 @@ func main() {
 
 	}
 
+}
+
+func makeStringList(stringname []string, groupData []GroupData) *widget.List {
+
+	stringList := widget.NewList(
+		func() int {
+			return len(stringname)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(i widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
+			label.SetText(stringname[i])
+			label.Resize(label.MinSize().Add(fyne.NewSize(100, 100))) // Largeur de 100 pixels
+		},
+	)
+	return stringList
+}
+
+func makeUpperUI(stringList *widget.List, stringname []string, groupData []GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates DatesData, stringdate [][]string) *fyne.Container {
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
 		// Vérifier si stringList est nul
@@ -680,8 +621,8 @@ func main() {
 		researchbar.Add(cardscroll)
 		w.Resize(fyne.NewSize(800, 600))
 
-		window = container.NewVBox(searchContainer)
-		window.Add(researchbar)
+		window = container.NewVBox(researchbar)
+
 		w.SetContent(window)
 
 		//w.SetContent(container.NewVBox(searchContainer))
@@ -864,9 +805,6 @@ func main() {
 
 	}
 
-	cardscroll := container.NewScroll(listcard)
-	cardscroll.SetMinSize(fyne.NewSize(675, 675))
-
 	sugg2 = container.NewVScroll(sugg)
 
 	sugg2.SetMinSize(fyne.NewSize(100, 100))
@@ -875,7 +813,7 @@ func main() {
 	sugg3 := container.NewHBox(sugg2, spacer)
 	spacer.Resize(fyne.NewSize(100, 200))
 
-	researchbar := container.NewVBox(
+	upperUI := container.NewVBox(
 		favoris,
 		search,
 		sugg3,
@@ -884,12 +822,98 @@ func main() {
 		valueLabel,
 		slider,
 	)
+	return upperUI
 
-	researchbar.Add(cardscroll)
+}
+
+func main() {
+
+	searchContainer = container.NewVBox()
+	//Get data from the artist API
+	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
+	groupData, err := fetchData(apiURL)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+	data.fetchDataM(apiURL)
+
+	//Get data from locations API
+	apiURL2 := "https://groupietrackers.herokuapp.com/api/locations"
+	groupDataLocations, err := fetchDataL(apiURL2)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	apiURL3 := "https://groupietrackers.herokuapp.com/api/dates"
+	groupDataDates, err := fetchDataD(apiURL3)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
+	relations, err := fetchDataR(apiURL4)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	//Store only the locations
+	var locations [][]string
+
+	for _, lct := range groupDataLocations.Index {
+		locations = append(locations, lct.Locations)
+	}
+
+	//Store only the locations
+	var dates [][]string
+
+	for _, lct := range groupDataDates.Index {
+		dates = append(dates, lct.Dates)
+	}
+	var stringname []string
+	var stringlocation [][]string
+	var stringdate [][]string
+	for i, group := range groupData {
+
+		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
+
+		stringname = append(stringname, group.Name)
+		stringlocation = append(stringlocation, locations[i])
+		stringdate = append(stringdate, dates[i])
+
+	}
+
+	a := app.New()
+	w = a.NewWindow("jogoat + samgod")
+
+	slider := widget.NewSlider(1900, 2024)
+
+	// Étiquette pour afficher la valeur actuelle du slider
+	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
+
+	w.SetMainMenu(makeMenu(a))
+
+	stringList := makeStringList(stringname, groupData)
+
+	listcard = container.NewVBox()
+
+	def = container.NewVBox()
+
+	makeListCard(card, infoback, listcard, def, groupData)
+
+	upperUI = makeUpperUI(stringList, stringname, groupData, valueLabel, slider, groupDataDates, stringdate)
+
+	cardscroll := container.NewScroll(listcard)
+
+	cardscroll.SetMinSize(fyne.NewSize(675, 675))
+	upperUI.Add(cardscroll)
+
 	w.Resize(fyne.NewSize(800, 600))
 
-	window = container.NewVBox(searchContainer)
-	window.Add(researchbar)
+	window = container.NewVBox(upperUI)
 
 	w.SetContent(window)
 
