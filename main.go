@@ -52,7 +52,7 @@ type RelationData struct {
 	} `json:"index"`
 }
 
-var wind *fyne.Container
+var wind222 *fyne.Container
 
 func fetchData(apiURL string) ([]GroupData, error) {
 	response, err := http.Get(apiURL)
@@ -186,7 +186,7 @@ func showGroupDetails2(groupID int, groupData []GroupData, w fyne.Window, search
 
 func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchContainer *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-		w.SetContent(container.NewVScroll(wind)) // Revenir à la liste de recherche
+		w.SetContent(container.NewVScroll(wind222)) // Revenir à la liste de recherche
 	})
 
 	for _, group := range groupData {
@@ -304,6 +304,11 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Groupie Tracker")
 
+	slider := widget.NewSlider(1900, 2024)
+
+	// Étiquette pour afficher la valeur actuelle du slider
+	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
+
 	var window *fyne.Container
 
 	menu := fyne.NewMainMenu(
@@ -324,7 +329,8 @@ func main() {
 				lien, _ := url.Parse("https://developer.spotify.com/documentation/embeds")
 				_ = a.OpenURL(lien)
 			}),
-		))
+		),
+	)
 
 	w.SetMainMenu(menu)
 
@@ -339,12 +345,15 @@ func main() {
 			label := obj.(*widget.Label)
 			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
 			label.SetText(stringname[i])
-			label.Resize(label.MinSize().Add(fyne.NewSize(5000, 5000))) // Largeur de 100 pixels
+			label.Resize(label.MinSize().Add(fyne.NewSize(100, 100))) // Largeur de 100 pixels
 		},
 	)
 	var card *fyne.Container
 	var infoback *fyne.Container
+	var listFavorit []string
 	listcard := container.NewVBox()
+	def := container.NewVBox()
+
 	for _, group := range groupData {
 		var listmember string
 		for _, memb := range group.Members {
@@ -355,6 +364,41 @@ func main() {
 		name := canvas.NewText(group.Name, color.Black)
 		members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
+		heartOnImage, _ := fyne.LoadResourceFromPath("./heartOn.png")
+
+		heartOffImage, _ := fyne.LoadResourceFromPath("./heartOff.png")
+
+		// Créer un booléen pour suivre l'état du bouton
+		var isPressed bool
+		var heartButton *widget.Button
+		// Créer un bouton avec l'image initiale du cœur
+		heartButton = widget.NewButton("", func() {
+
+			// Inverser l'état lors du clic sur le bouton
+			isPressed = !isPressed
+			// Mettre à jour l'image du bouton en fonction de l'état
+			if isPressed {
+				heartButton.SetIcon(heartOnImage)
+				listFavorit = append(listFavorit, group.Name)
+			} else {
+				heartButton.SetIcon(heartOffImage)
+				for i, name := range listFavorit {
+					if name == group.Name {
+						listFavorit = append(listFavorit[:i], listFavorit[i+1:]...)
+
+					}
+				}
+			}
+			fmt.Println(listFavorit)
+		})
+		heartButton.SetIcon(heartOffImage)
+		heartButton.Importance = widget.LowImportance
+
+		viewDetail := widget.NewButton("View Detail", func() {
+
+			showGroupDetails2(group.ID, groupData, w, searchContainer, window)
+
+		})
 
 		l, _ := fyne.LoadResourceFromURLString(imageURL)
 		img := canvas.NewImageFromResource(l)
@@ -380,7 +424,9 @@ func main() {
 
 		iinfo := container.New(layout.NewVBoxLayout(),
 			container.NewCenter(name),
-			container.NewCenter(members))
+			container.NewCenter(members),
+			heartButton,
+			viewDetail)
 
 		infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
 
@@ -406,13 +452,14 @@ func main() {
 		card.Resize(fyne.NewSize(100, 300))
 
 		listcard.Add(card)
+		def.Add(card)
 
 	}
 
 	var checkboxFilters []*widget.Check
 
 	// Créer les cases à cocher pour les filtres
-	for i := 2; i <= 6; i++ {
+	for i := 2; i <= 7; i++ {
 		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
 			return func(checked bool) {
 				// Ajouter votre logique de traitement ici en fonction de l'état de la case à cocher
@@ -539,7 +586,96 @@ func main() {
 		}
 
 	}
+	favoris := widget.NewButton("Favoris", func() {
+		var fg []string
+		var favoritCard *fyne.Container
+		favoritMenu := container.NewVBox()
+		for _, favorisGroup := range listFavorit {
 
+			for _, group := range groupData {
+				if favorisGroup == group.Name {
+					var listmember string
+					for _, memb := range group.Members {
+						listmember += memb
+						listmember += "  "
+
+					}
+					name := canvas.NewText(group.Name, color.Black)
+					members := canvas.NewText(listmember, color.Black)
+					imageURL := group.Image
+
+					l, _ := fyne.LoadResourceFromURLString(imageURL)
+					img := canvas.NewImageFromResource(l)
+					img.FillMode = canvas.ImageFillContain // Gestion du fill image
+					img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+					img.Resize(fyne.NewSize(200, 200))
+
+					r, g, b, a := calculateAverageColor(img)
+
+					background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+					background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+
+					background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
+					background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
+					background.CornerRadius = 20                  // Définir les coins arrondis
+
+					background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
+					background2.FillColor = color.RGBA{255, 255, 255, 255}
+
+					background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
+					background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
+					background2.CornerRadius = 20                  // Définir les coins arrondis
+
+					iinfo := container.New(layout.NewVBoxLayout(),
+						container.NewCenter(name),
+						container.NewCenter(members))
+
+					infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
+
+					info := container.New(layout.NewVBoxLayout(),
+
+						img,
+						container.NewCenter(infoback),
+					)
+
+					favoritCard = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
+
+					favoritCard.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card
+
+					border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
+					border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
+					border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
+					border.StrokeColor = color.Black                 // Définir la couleur de la bordure
+					border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
+					border.CornerRadius = 20                         // Définir les coins
+
+					favoritCard.Add(border)
+
+					favoritCard.Resize(fyne.NewSize(100, 300))
+
+					favoritMenu.Add(favoritCard)
+					fg = append(fg, group.Name)
+
+				}
+			}
+
+		}
+		fmt.Println(fg)
+		backButton := widget.NewButton("Retour", func() {
+
+			w.SetContent(window)
+		})
+
+		favoritCardScroll := container.NewScroll(favoritMenu)
+		favoritCardScroll.SetMinSize(fyne.NewSize(675, 675))
+
+		favoritPage := container.NewVBox(
+			backButton,
+			favoritCardScroll)
+
+		w.SetContent(favoritPage)
+
+	})
 	var clearButton *widget.Button
 
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
@@ -562,27 +698,42 @@ func main() {
 		}
 		stringList.Refresh()
 
+		slider.SetValue(0)
+
 		cardscroll := container.NewScroll(listcard)
+
 		cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
 		sugg2 = container.NewVScroll(sugg)
 
 		sugg2.SetMinSize(fyne.NewSize(100, 100))
 		sugg2.Hide()
+		spacer := layout.NewSpacer()
+		sugg3 := container.NewHBox(sugg2, spacer)
+		spacer.Resize(fyne.NewSize(100, 200))
 
 		researchbar := container.NewVBox(
 			checkboxContainer,
+			favoris,
 			search,
-			sugg2,
+			sugg3,
 			searchButton,
 			clearButton,
+			valueLabel,
+			slider,
 		)
 
 		researchbar.Add(cardscroll)
+		w.Resize(fyne.NewSize(800, 600))
 
 		w.SetContent(container.NewVBox(searchContainer))
-		wind = container.NewVBox(researchbar)
+		wind := container.NewVBox(researchbar)
 		w.SetContent(container.NewVScroll(wind))
+		window = container.NewVBox(searchContainer)
+		window.Add(researchbar)
+		w.SetContent(window)
+
+		//w.SetContent(container.NewVBox(searchContainer))
 
 	})
 
@@ -677,10 +828,13 @@ func main() {
 
 		// Afficher les résultats de la recherche
 		if len(suggestions) > 0 {
+			spacer := layout.NewSpacer()
+			sugg3 := container.NewHBox(sugg2, spacer)
+			spacer.Resize(fyne.NewSize(100, 200))
 			rsrch := container.NewVBox(search, sugg3, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			wind = container.NewVBox(rsrch, suggestionsContainer)
-			w.SetContent(container.NewVScroll(wind))
+			wind222 = container.NewVBox(rsrch, suggestionsContainer)
+			w.SetContent(container.NewVScroll(wind222))
 		} else {
 			// Afficher un message si aucune suggestion n'est trouvée
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
@@ -696,6 +850,87 @@ func main() {
 		// Lancer la recherche lorsque la touche "Entrer" est pressée
 		searchButton.OnTapped()
 	}
+	var deft bool
+	// Gérer le changement de valeur du slider
+	slider.OnChanged = func(value float64) {
+		deft = true
+		listcard.RemoveAll()
+		valueLabel.SetText(fmt.Sprintf("Year : %d", int(slider.Value)))
+		for _, group := range groupData {
+			if slider.Value == float64(group.CreationDate) {
+				var listmember string
+				for _, memb := range group.Members {
+					listmember += memb
+					listmember += "  "
+
+				}
+				name := canvas.NewText(group.Name, color.Black)
+				members := canvas.NewText(listmember, color.Black)
+				imageURL := group.Image
+
+				l, _ := fyne.LoadResourceFromURLString(imageURL)
+				img := canvas.NewImageFromResource(l)
+				img.FillMode = canvas.ImageFillContain // Gestion du fill image
+				img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+				img.Resize(fyne.NewSize(200, 200))
+
+				r, g, b, a := calculateAverageColor(img)
+
+				background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+				background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+
+				background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
+				background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
+				background.CornerRadius = 20                  // Définir les coins arrondis
+
+				background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
+				background2.FillColor = color.RGBA{255, 255, 255, 255}
+
+				background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
+				background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
+				background2.CornerRadius = 20                  // Définir les coins arrondis
+
+				iinfo := container.New(layout.NewVBoxLayout(),
+					container.NewCenter(name),
+					container.NewCenter(members))
+
+				infoback = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background2, iinfo)
+
+				info := container.New(layout.NewVBoxLayout(),
+
+					img,
+					container.NewCenter(infoback),
+				)
+
+				card = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
+
+				card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la card
+
+				border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
+				border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
+				border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
+				border.StrokeColor = color.Black                 // Définir la couleur de la bordure
+				border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
+				border.CornerRadius = 20                         // Définir les coins
+
+				card.Add(border)
+
+				card.Resize(fyne.NewSize(100, 300))
+
+				listcard.Add(card)
+				deft = false
+
+			}
+		}
+		if deft {
+			listcard.RemoveAll()
+			for _, o := range def.Objects {
+				listcard.Add(o)
+
+			}
+		}
+
+	}
 
 	cardscroll := container.NewScroll(listcard)
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
@@ -710,10 +945,13 @@ func main() {
 
 	researchbar := container.NewVBox(
 		checkboxContainer,
+		favoris,
 		search,
 		sugg3,
 		searchButton,
 		clearButton,
+		valueLabel,
+		slider,
 	)
 
 	researchbar.Add(cardscroll)
