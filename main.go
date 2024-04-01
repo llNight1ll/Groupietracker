@@ -836,7 +836,6 @@ func main() {
 		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
 		return
 	}
-	data.fetchDataM(apiURL)
 
 	//Get data from locations API
 	apiURL2 := "https://groupietrackers.herokuapp.com/api/locations"
