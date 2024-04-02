@@ -1,5 +1,7 @@
 package structdata
 
+//Declaration of the structs which are going to be used for storing Api's informations
+
 type GroupData struct {
 	ID           int      `json:"id"`
 	Image        string   `json:"image"`
