@@ -112,7 +112,7 @@ func main() {
 	cardscroll.SetMinSize(fyne.NewSize(675, 675))
 	gui.UpperUI.Add(cardscroll)
 
-	gui.W.Resize(fyne.NewSize(800, 600))
+	gui.W.Resize(fyne.NewSize(1250, 100))
 
 	gui.Window = container.NewVBox(gui.UpperUI)
 

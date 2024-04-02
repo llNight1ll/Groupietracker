@@ -30,32 +30,56 @@ var UpperUI *fyne.Container
 
 func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container, Window *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-
 		W.SetContent(Window)
 	})
 
 	for _, group := range groupData {
 		if group.ID == groupID {
+
+			// Create a page title
+			title := widget.NewLabelWithStyle("Info Artist :", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			title.Move(fyne.NewPos(520, 0))
+
 			// Create a text widget to display group details in the window
-			artist := widget.NewLabel(group.Name)
-			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
+			artist := widget.NewLabelWithStyle(group.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			artistCenter := fyne.NewContainerWithLayout(layout.NewCenterLayout(), artist)
+
+			// Convert slice to string
+			membersLabel := "- "
+			for i, member := range group.Members {
+				if i > 0 {
+					membersLabel += ", \n -"
+				}
+				membersLabel += member
+			}
+			members := widget.NewLabelWithStyle("Membres: \n"+membersLabel, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
+			
 			album := widget.NewLabel(group.FirstAlbum)
+			albumText := album.Text
+			// Create a label widget to display ""First album released" and the band name with the date of the first album released
+			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de " + group.Name + " sorti le: " + albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+
 			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
+			// Get the text value of creationDate
+			creationDateText := creationDate.Text
+			// Create a label widget to display "Career start" and the group name with creation date
+			carriere := widget.NewLabelWithStyle("Debut de carrière de " + group.Name + " en "+ creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			imageURL := group.Image
 
 			r, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(r)
-			img.FillMode = canvas.ImageFillContain // Gestion du fill image
-			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
-			img.Resize(fyne.NewSize(120, 120))
+			img.FillMode = canvas.ImageFillContain // Image fill management
+			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
+			img.Resize(fyne.NewSize(350, 350))
 
 			// Create a container to display group details
 			groupDetails := container.NewVBox(
+				title,
 				img,
-				artist,
+				artistCenter,
 				members,
-				album,
-				creationDate,
+				firstAlbum,
+				carriere,
 				backButton,
 			)
 
@@ -69,32 +93,57 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 
 func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-		// Return to search list
+		// Retour à la liste de recherche
 		W.SetContent(container.NewVScroll(ResultWindow))
 	})
 
 	for _, group := range groupData {
 		if group.ID == groupID {
+
+			// Create a page title
+			title := widget.NewLabelWithStyle("Info Artist :", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			title.Move(fyne.NewPos(520, 0))
+
 			// Create a text widget to display group details in the window
-			artist := widget.NewLabel(group.Name)
-			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
+			artist := widget.NewLabelWithStyle(group.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			artistCenter := fyne.NewContainerWithLayout(layout.NewCenterLayout(), artist)
+
+			// Convert slice to string
+			membersLabel := "- "
+			for i, member := range group.Members {
+				if i > 0 {
+					membersLabel += ", \n -"
+				}
+				membersLabel += member
+			}
+			members := widget.NewLabelWithStyle("Membres: \n"+membersLabel, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
+			
 			album := widget.NewLabel(group.FirstAlbum)
+			albumText := album.Text
+			// Create a label widget to display ""First album released" and the band name with the date of the first album released
+			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de " + group.Name + " sorti le: " + albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+
 			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
+			// Get the text value of creationDate
+			creationDateText := creationDate.Text
+			// Create a label widget to display "Career start" and the group name with creation date
+			carriere := widget.NewLabelWithStyle("Debut de carrière de " + group.Name + " en "+ creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			imageURL := group.Image
 
 			r, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(r)
-			img.FillMode = canvas.ImageFillContain // Gestion du fill image
-			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
-			img.Resize(fyne.NewSize(120, 120))
+			img.FillMode = canvas.ImageFillContain // Image fill management
+			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
+			img.Resize(fyne.NewSize(350, 350))
 
 			// Create a container to display group details
 			groupDetails := container.NewVBox(
+				title,
 				img,
-				artist,
+				artistCenter,
 				members,
-				album,
-				creationDate,
+				firstAlbum,
+				carriere,
 				backButton,
 			)
 
@@ -250,7 +299,6 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 		Def.Add(Card)
 
 	}
-
 }
 
 func MakeStringList(stringname []string, groupData []structdata.GroupData) *widget.List {
@@ -297,7 +345,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			}
 		}
 
-		// Mettre à jour la liste avec les résultats de la recherche
+		// Update list with search results
 		stringList.Length = func() int {
 			return len(filteredList)
 		}
@@ -316,7 +364,8 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 	stringList.OnSelected = func(id widget.ListItemID) {
 		groupID := groupData[id].ID
-		ShowGroupDetails(groupID, groupData, W, SearchContainer) // Passer la liste de recherche et la barre de recherche à la fonction
+		// Switch the search list and the search bar to the function
+		ShowGroupDetails(groupID, groupData, W, SearchContainer)
 	}
 
 	//Create suggestion container
@@ -505,7 +554,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		)
 
 		researchbar.Add(cardscroll)
-		W.Resize(fyne.NewSize(800, 600))
+		W.Resize(fyne.NewSize(1000, 400))
 
 		Window = container.NewVBox(researchbar)
 
@@ -542,7 +591,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			resultat.SetIcon(l)
 			// Set image as button icon
 			resultat.Resize(fyne.NewSize(200, 200))
-			 // Define group name as button text
+			// Define group name as button text
 			resultat.SetText(group.Name)
 
 			// Add button to suggestion list
@@ -572,7 +621,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			}
 		}
 
-		//Afficher un message si la date et l'annee ne correspond à aucun artiste
+		//Display message if date and year don't match any artist
 		if !verif {
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
@@ -591,19 +640,19 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			ResultWindow = container.NewVBox(rsrch, suggestionsContainer)
 			W.SetContent(container.NewVScroll(ResultWindow))
 		} else {
-			// Afficher un message si aucune resultat n'est trouvée
+			// Display a message if no results are found
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
 
 			W.SetContent(r)
 		}
 
-		//reactiver la barre de recherche
+		//reactivate search bar
 		search.Enable()
 	}
 
 	search.OnSubmitted = func(text string) {
-		// Lancer la recherche lorsque la touche "Entrer" est pressée
+		// Start search when "Enter" key is pressed
 		searchButton.OnTapped()
 	}
 	var deft bool
@@ -710,5 +759,4 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	)
 
 	return UpperUI
-
 }
