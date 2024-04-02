@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+//Functions which return the datas of each API
+
 func FetchData(apiURL string) ([]structdata.GroupData, error) {
 	response, err := http.Get(apiURL)
 	if err != nil {
