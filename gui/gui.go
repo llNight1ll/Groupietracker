@@ -16,8 +16,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// Declaration of global variables
 var ListFavorit []string
-var Wind222 *fyne.Container
+var ResultWindow *fyne.Container
 var Card *fyne.Container
 var Infoback *fyne.Container
 var Listcard *fyne.Container
@@ -68,7 +69,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 
 func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-		W.SetContent(container.NewVScroll(Wind222)) // Revenir à la liste de recherche
+		W.SetContent(container.NewVScroll(ResultWindow)) // Revenir à la liste de recherche
 	})
 
 	for _, group := range groupData {
@@ -105,6 +106,7 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 }
 
 func MakeMenu(a fyne.App) *fyne.MainMenu {
+	//Create menu and add to it items
 	menu := fyne.NewMainMenu(
 
 		// Theme de le la page
@@ -129,6 +131,7 @@ func MakeMenu(a fyne.App) *fyne.MainMenu {
 }
 
 func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne.Container, Def *fyne.Container, groupData []structdata.GroupData) {
+	//Range artists API to collect info about them
 	for _, group := range groupData {
 		var listmember string
 		for _, memb := range group.Members {
@@ -136,25 +139,26 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 			listmember += "  "
 
 		}
+		// Create the variable which are going to be display on each card
 		name := canvas.NewText(group.Name, color.Black)
 		members := canvas.NewText(listmember, color.Black)
 		imageURL := group.Image
-		heartOnImage, _ := fyne.LoadResourceFromPath("./heartOn.png")
 
+		heartOnImage, _ := fyne.LoadResourceFromPath("./heartOn.png")
 		heartOffImage, _ := fyne.LoadResourceFromPath("./heartOff.png")
 
-		// Créer un booléen pour suivre l'état du bouton
+		// Create a boolean to trace the state of the favourit button
 		var isPressed bool
 		var heartButton *widget.Button
 		nameGroup := group.Name
-		// Créer un bouton avec l'image initiale du cœur
+		// Create favourit button
 
 		heartButton = widget.NewButton("", func() {
 			nameG := nameGroup
 
-			// Inverser l'état lors du clic sur le bouton
+			// Change state when the button is pressed
 			isPressed = !isPressed
-			// Mettre à jour l'image du bouton en fonction de l'état
+			// Update the icon of the button
 			if isPressed {
 				heartButton.SetIcon(heartOnImage)
 
@@ -176,21 +180,25 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 
 		groupID := group.ID
 
+		//Create a button view detail to see more about a group
+
 		viewDetail := widget.NewButton("View Detail", func() {
 			GrpID := groupID
 
 			ShowGroupDetails2(GrpID, groupData, W, SearchContainer, Window)
 
 		})
-
+		//Get and resize the group image
 		l, _ := fyne.LoadResourceFromURLString(imageURL)
 		img := canvas.NewImageFromResource(l)
-		img.FillMode = canvas.ImageFillContain // Gestion du fill image
-		img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+		img.FillMode = canvas.ImageFillContain
+		img.SetMinSize(fyne.NewSize(200, 200))
 		img.Resize(fyne.NewSize(200, 200))
 
+		//Get background color
 		r, g, b, a := colorAnalysis.CalculateAverageColor(img)
 
+		//Create the card background
 		background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 		background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
@@ -205,6 +213,7 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 		background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
 		background2.CornerRadius = 20                  // Définir les coins arrondis
 
+		//Gathered the informations of the group's card
 		iinfo := container.New(layout.NewVBoxLayout(),
 			container.NewCenter(name),
 			container.NewCenter(members),
@@ -218,17 +227,19 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 			img,
 			container.NewCenter(Infoback),
 		)
+		//Set up the card
 
 		Card = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
 
-		Card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la Card
+		Card.Resize(fyne.NewSize(300, 300))
 
-		border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
-		border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
-		border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
-		border.StrokeColor = color.Black                 // Définir la couleur de la bordure
-		border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
-		border.CornerRadius = 20                         // Définir les coins
+		//Create border to the card
+		border := canvas.NewRectangle(color.Transparent)
+		border.SetMinSize(fyne.NewSize(300, 300))
+		border.Resize(fyne.NewSize(296, 296))
+		border.StrokeColor = color.Black
+		border.StrokeWidth = 3
+		border.CornerRadius = 20
 
 		Card.Add(border)
 
@@ -307,14 +318,19 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		ShowGroupDetails(groupID, groupData, W, SearchContainer) // Passer la liste de recherche et la barre de recherche à la fonction
 	}
 
-	sugg := container.NewVBox()
-	sugg2 := container.NewVScroll(sugg)
+	//Create suggestion container
+	suggestion := container.NewVBox()
+	suggestionScroll := container.NewVScroll(suggestion)
+	//Suggestions are updtate every time a user writte somthing in the search bar
 	search.OnChanged = func(query string) {
 		searchText := strings.ToLower(query)
+		//Analyze the query and create the butons of each suggestion
 		if len(query) > 0 {
-			sugg.Objects = make([]fyne.CanvasObject, 0)
+			//Refresh the suggestion every input
+			suggestion.Objects = make([]fyne.CanvasObject, 0)
 
 			for _, group := range groupData {
+				//Suggestion of a group
 				if strings.Contains(strings.ToLower(group.Name), searchText) {
 					label := group.Name + "        - Groupe"
 					h := widget.NewButton(label, func(groupID int) func() {
@@ -323,10 +339,11 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 						}
 					}(group.ID))
 					h.Importance = widget.LowImportance
-					sugg.Add(h)
+					suggestion.Add(h)
 
 				}
 				for _, groupMember := range group.Members {
+					//Suggestion of a member
 					if strings.Contains(strings.ToLower(groupMember), searchText) {
 						label2 := groupMember + "         - Member"
 						h := widget.NewButton(label2, func(groupID int) func() {
@@ -337,27 +354,30 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 						}(group.ID))
 						h.Importance = widget.LowImportance
 
-						sugg.Add(h)
+						suggestion.Add(h)
 
 					}
 				}
 
 			}
-			sugg.Show()
-			sugg2.Show()
+			suggestion.Show()
+			suggestionScroll.Show()
 		} else {
-			sugg.Hide()
-			sugg2.Hide()
+			//Hide suggestion container if it is empty
+			suggestion.Hide()
+			suggestionScroll.Hide()
 		}
 
 	}
-	favoris := widget.NewButton("Favoris", func() {
-		var fg []string
-		var favoritCard *fyne.Container
-		favoritMenu := container.NewVBox()
+	//Create View Favourite button
+	favourite := widget.NewButton("View favourites", func() {
+		var favoriteCard *fyne.Container
+		favoriteMenu := container.NewVBox()
+		// Range the String list of the name's group wich are in favourite
 		for _, favorisGroup := range ListFavorit {
 
 			for _, group := range groupData {
+				//Create card of favourite's group
 				if favorisGroup == group.Name {
 					var listmember string
 					for _, memb := range group.Members {
@@ -371,8 +391,8 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 					l, _ := fyne.LoadResourceFromURLString(imageURL)
 					img := canvas.NewImageFromResource(l)
-					img.FillMode = canvas.ImageFillContain // Gestion du fill image
-					img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+					img.FillMode = canvas.ImageFillContain
+					img.SetMinSize(fyne.NewSize(200, 200))
 					img.Resize(fyne.NewSize(200, 200))
 
 					r, g, b, a := colorAnalysis.CalculateAverageColor(img)
@@ -380,16 +400,16 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 					background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 					background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
-					background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
-					background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
-					background.CornerRadius = 20                  // Définir les coins arrondis
+					background.SetMinSize(fyne.NewSize(300, 300))
+					background.Resize(fyne.NewSize(296, 296))
+					background.CornerRadius = 20
 
 					background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
 					background2.FillColor = color.RGBA{255, 255, 255, 255}
 
-					background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
-					background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
-					background2.CornerRadius = 20                  // Définir les coins arrondis
+					background2.SetMinSize(fyne.NewSize(100, 100))
+					background2.Resize(fyne.NewSize(100, 100))
+					background2.CornerRadius = 20
 
 					iinfo := container.New(layout.NewVBoxLayout(),
 						container.NewCenter(name),
@@ -403,46 +423,47 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 						container.NewCenter(Infoback),
 					)
 
-					favoritCard = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
+					favoriteCard = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
 
-					favoritCard.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la Card
+					favoriteCard.Resize(fyne.NewSize(300, 300))
 
-					border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
-					border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
-					border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
-					border.StrokeColor = color.Black                 // Définir la couleur de la bordure
-					border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
-					border.CornerRadius = 20                         // Définir les coins
+					border := canvas.NewRectangle(color.Transparent)
+					border.SetMinSize(fyne.NewSize(300, 300))
+					border.Resize(fyne.NewSize(296, 296))
+					border.StrokeColor = color.Black
+					border.StrokeWidth = 3
+					border.CornerRadius = 20
 
-					favoritCard.Add(border)
+					favoriteCard.Add(border)
 
-					favoritCard.Resize(fyne.NewSize(100, 300))
+					favoriteCard.Resize(fyne.NewSize(100, 300))
 
-					favoritMenu.Add(favoritCard)
-					fg = append(fg, group.Name)
+					favoriteMenu.Add(favoriteCard)
 
 				}
 			}
 
 		}
-		fmt.Println(fg)
+		//Create button to go back to the homepage
+
 		backButton := widget.NewButton("Retour", func() {
 
 			W.SetContent(Window)
 		})
 
-		favoritCardScroll := container.NewScroll(favoritMenu)
+		favoritCardScroll := container.NewScroll(favoriteMenu)
 		favoritCardScroll.SetMinSize(fyne.NewSize(675, 675))
 
 		favoritPage := container.NewVBox(
 			backButton,
 			favoritCardScroll)
 
+		//Display the favorite page
 		W.SetContent(favoritPage)
 
 	})
 	var clearButton *widget.Button
-
+	// Clear button let the user go back to the homepage and reset the filter
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		search.SetText("")
 
@@ -464,16 +485,16 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 		cardscroll.SetMinSize(fyne.NewSize(675, 675))
 
-		sugg2 = container.NewVScroll(sugg)
+		suggestionScroll = container.NewVScroll(suggestion)
 
-		sugg2.SetMinSize(fyne.NewSize(100, 100))
-		sugg2.Hide()
+		suggestionScroll.SetMinSize(fyne.NewSize(100, 100))
+		suggestionScroll.Hide()
 		spacer := layout.NewSpacer()
-		sugg3 := container.NewHBox(sugg2, spacer)
+		sugg3 := container.NewHBox(suggestionScroll, spacer)
 		spacer.Resize(fyne.NewSize(100, 200))
 
 		researchbar := container.NewVBox(
-			favoris,
+			favourite,
 			search,
 			sugg3,
 			searchButton,
@@ -506,29 +527,29 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
-			img.FillMode = canvas.ImageFillContain // Gestion du fill image
-			img.SetMinSize(fyne.NewSize(120, 120)) // Définir la taille minimum de l'image
+			img.FillMode = canvas.ImageFillContain
+			img.SetMinSize(fyne.NewSize(120, 120))
 			img.Resize(fyne.NewSize(120, 120))
 
 			// Créer un bouton personnalisé avec l'image et le nom du groupe
-			suggestion := widget.NewButton("", func(groupID int) func() {
+			resultat := widget.NewButton("", func(groupID int) func() {
 				return func() {
 					ShowGroupDetails(groupID, groupData, W, SearchContainer) // Passer SearchContainer à la fonction
 				}
 			}(group.ID))
-			suggestion.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
-			suggestion.SetIcon(l)
-			suggestion.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
-			suggestion.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
+			resultat.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
+			resultat.SetIcon(l)
+			resultat.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
+			resultat.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
 
 			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
-				suggestions = append(suggestions, suggestion)
+				suggestions = append(suggestions, resultat)
 				verif = true
 			} else {
 				for _, member := range group.Members {
 					if strings.Contains(strings.ToLower(member), searchText) {
-						suggestions = append(suggestions, suggestion)
+						suggestions = append(suggestions, resultat)
 						verif = true
 						break
 					}
@@ -536,18 +557,18 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			}
 
 			if strings.Contains(fmt.Sprintf("%d", group.CreationDate), searchText) {
-				suggestions = append(suggestions, suggestion)
+				suggestions = append(suggestions, resultat)
 				verif = true
 			}
 
 			// if strings.Contains(strings.ToLower(group.FirstAlbum), searchText) {
-			// 	suggestions = append(suggestions, suggestion)
+			// 	suggestions = append(suggestions, resultat)
 			// 	verif = true
 			// }
 
 			for _, date := range groupDataDates.Index {
 				if strings.Contains(strings.ToLower(date.Dates[0]), searchText) {
-					suggestions = append(suggestions, suggestion)
+					suggestions = append(suggestions, resultat)
 					verif = true
 				}
 			}
@@ -565,14 +586,14 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 		if len(suggestions) > 0 {
 			spacer := layout.NewSpacer()
-			sugg3 := container.NewHBox(sugg2, spacer)
+			sugg3 := container.NewHBox(suggestionScroll, spacer)
 			spacer.Resize(fyne.NewSize(100, 200))
 			rsrch := container.NewVBox(search, sugg3, searchButton, clearButton)
 			suggestionsContainer := container.NewVBox(suggestions...)
-			Wind222 = container.NewVBox(rsrch, suggestionsContainer)
-			W.SetContent(container.NewVScroll(Wind222))
+			ResultWindow = container.NewVBox(rsrch, suggestionsContainer)
+			W.SetContent(container.NewVScroll(ResultWindow))
 		} else {
-			// Afficher un message si aucune suggestion n'est trouvée
+			// Afficher un message si aucune resultat n'est trouvée
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
 
@@ -588,12 +609,13 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		searchButton.OnTapped()
 	}
 	var deft bool
-	// Gérer le changement de valeur du slider
+	// Slider effect when changes
 	slider.OnChanged = func(value float64) {
 		deft = true
 		Listcard.RemoveAll()
-		valueLabel.SetText(fmt.Sprintf("Year : %d", int(slider.Value)))
+		valueLabel.SetText(fmt.Sprintf("Creation Year : %d", int(slider.Value)))
 		for _, group := range groupData {
+			//Add to the list of card only the groups where their creation date is the same as the slider value
 			if slider.Value == float64(group.CreationDate) {
 				var listmember string
 				for _, memb := range group.Members {
@@ -607,8 +629,8 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 				l, _ := fyne.LoadResourceFromURLString(imageURL)
 				img := canvas.NewImageFromResource(l)
-				img.FillMode = canvas.ImageFillContain // Gestion du fill image
-				img.SetMinSize(fyne.NewSize(200, 200)) //Définir la taille minimum de l'image
+				img.FillMode = canvas.ImageFillContain
+				img.SetMinSize(fyne.NewSize(200, 200))
 				img.Resize(fyne.NewSize(200, 200))
 
 				r, g, b, a := colorAnalysis.CalculateAverageColor(img)
@@ -616,16 +638,16 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 				background := canvas.NewRectangle(color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 				background.FillColor = color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
 
-				background.SetMinSize(fyne.NewSize(300, 300)) // Définir la taille minimum du bakcground
-				background.Resize(fyne.NewSize(296, 296))     // Redimensionner pour inclure les coin
-				background.CornerRadius = 20                  // Définir les coins arrondis
+				background.SetMinSize(fyne.NewSize(300, 300))
+				background.Resize(fyne.NewSize(296, 296))
+				background.CornerRadius = 20
 
 				background2 := canvas.NewRectangle(color.RGBA{255, 255, 255, 255})
 				background2.FillColor = color.RGBA{255, 255, 255, 255}
 
-				background2.SetMinSize(fyne.NewSize(100, 100)) // Définir la taille minimum du bakcground
-				background2.Resize(fyne.NewSize(100, 100))     // Redimensionner pour inclure les coin
-				background2.CornerRadius = 20                  // Définir les coins arrondis
+				background2.SetMinSize(fyne.NewSize(100, 100))
+				background2.Resize(fyne.NewSize(100, 100))
+				background2.CornerRadius = 20
 
 				iinfo := container.New(layout.NewVBoxLayout(),
 					container.NewCenter(name),
@@ -641,14 +663,14 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 				Card = container.New(layout.NewBorderLayout(nil, nil, nil, nil), background, info)
 
-				Card.Resize(fyne.NewSize(300, 300)) //Définir la taille minimum de la Card
+				Card.Resize(fyne.NewSize(300, 300))
 
-				border := canvas.NewRectangle(color.Transparent) // Définir une couleur transparente pour le remplissage
-				border.SetMinSize(fyne.NewSize(300, 300))        //Définir la taille minimum de la bordure
-				border.Resize(fyne.NewSize(296, 296))            // Redimensionner pour inclure les coin
-				border.StrokeColor = color.Black                 // Définir la couleur de la bordure
-				border.StrokeWidth = 3                           // Définir l'épaisseur de la bordure
-				border.CornerRadius = 20                         // Définir les coins
+				border := canvas.NewRectangle(color.Transparent)
+				border.SetMinSize(fyne.NewSize(300, 300))
+				border.Resize(fyne.NewSize(296, 296))
+				border.StrokeColor = color.Black
+				border.StrokeWidth = 3
+				border.CornerRadius = 20
 
 				Card.Add(border)
 
@@ -659,6 +681,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 			}
 		}
+		// If their is no result matching the slider value, display all the group
 		if deft {
 			Listcard.RemoveAll()
 			for _, o := range Def.Objects {
@@ -668,17 +691,18 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		}
 
 	}
+	//Refine suggestion container
 
-	sugg2 = container.NewVScroll(sugg)
+	suggestionScroll = container.NewVScroll(suggestion)
 
-	sugg2.SetMinSize(fyne.NewSize(100, 100))
-	sugg2.Hide()
+	suggestionScroll.SetMinSize(fyne.NewSize(100, 100))
+	suggestionScroll.Hide()
 	spacer := layout.NewSpacer()
-	sugg3 := container.NewHBox(sugg2, spacer)
+	sugg3 := container.NewHBox(suggestionScroll, spacer)
 	spacer.Resize(fyne.NewSize(100, 200))
-
+	//Create a container whi contains all the features
 	UpperUI := container.NewVBox(
-		favoris,
+		favourite,
 		search,
 		sugg3,
 		searchButton,
