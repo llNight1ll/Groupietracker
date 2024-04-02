@@ -711,6 +711,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		valueLabel,
 		slider,
 	)
+
 	return UpperUI
 
 }
