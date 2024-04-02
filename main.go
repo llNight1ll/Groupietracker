@@ -70,7 +70,7 @@ func main() {
 	var stringdate [][]string
 	for i, group := range groupData {
 
-		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
+		fmt.Println(relations.Index[i])
 
 		stringname = append(stringname, group.Name)
 		stringlocation = append(stringlocation, locations[i])
