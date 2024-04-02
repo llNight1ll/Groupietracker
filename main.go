@@ -51,7 +51,6 @@ func main() {
 
 	//Store only the locations
 	var locations [][]string
-	
 
 	for _, lct := range groupDataLocations.Index {
 		locations = append(locations, lct.Locations)
@@ -80,17 +79,16 @@ func main() {
 	}
 	//Create a new app
 	a := app.New()
-	gui.W = a.NewWindow("jogoat + samgod + matthis")
 
-	gui.W = a.NewWindow("jogoat + samgod")
+	gui.W = a.NewWindow("MusicData")
 
 	gui.SearchContainer = container.NewVBox()
 
-	//create a slider from 1900 to 2024
+	//Create a slider from 1900 to 2024
 	slider := widget.NewSlider(1900, 2024)
 
 	// Label for the current value of the slider
-	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
+	valueLabel := widget.NewLabel(fmt.Sprintf("Creation Year : %d", int(slider.Value)))
 
 	//Set the menu
 	gui.W.SetMainMenu(gui.MakeMenu(a))
