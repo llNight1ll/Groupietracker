@@ -80,7 +80,7 @@ func main() {
 	//Create a new app
 	a := app.New()
 
-	gui.W = a.NewWindow("MusicData")
+	gui.W = a.NewWindow("Music Data")
 
 	gui.SearchContainer = container.NewVBox()
 

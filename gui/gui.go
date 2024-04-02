@@ -49,7 +49,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
 			img.Resize(fyne.NewSize(120, 120))
 
-			// Créez un conteneur pour afficher les détails du groupe
+			// Create a container to display group details
 			groupDetails := container.NewVBox(
 				img,
 				artist,
@@ -275,14 +275,14 @@ func MakeStringList(stringname []string, groupData []structdata.GroupData) *widg
 func MakeUpperUI(stringList *widget.List, stringname []string, groupData []structdata.GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates structdata.DatesData, stringdate [][]string) *fyne.Container {
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
-		// Vérifier si stringList est nul
+		// Check if stringList is null
 		if W.Content == nil {
 			return
 		}
-		// Nouvelle liste pour les résultats de la recherche
+		// New list for search results
 		filteredList := []string{}
 
-		// Parcourir la liste d'origine et ajouter les éléments correspondants à la nouvelle liste
+		// Browse the original list and add the corresponding items to the new list
 		for _, item := range stringname {
 			if strings.Contains(strings.ToLower(item), strings.ToLower(search.Text)) {
 				filteredList = append(filteredList, item)
@@ -511,12 +511,10 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 		W.SetContent(Window)
 
-		//W.SetContent(container.NewVBox(SearchContainer))
-
 	})
 
 	searchButton.OnTapped = func() {
-		// Désactiver barre de recherche
+		// Disable search bar
 		search.Disable()
 
 		searchText := strings.ToLower(search.Text)
@@ -532,18 +530,22 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			img.SetMinSize(fyne.NewSize(120, 120))
 			img.Resize(fyne.NewSize(120, 120))
 
-			// Créer un bouton personnalisé avec l'image et le nom du groupe
+			// Create a custom button with the group's image and name
 			resultat := widget.NewButton("", func(groupID int) func() {
 				return func() {
-					ShowGroupDetails(groupID, groupData, W, SearchContainer) // Passer SearchContainer à la fonction
+					// Pass SearchContainer to function
+					ShowGroupDetails(groupID, groupData, W, SearchContainer)
 				}
 			}(group.ID))
-			resultat.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
+			// Reduce importance so that it doesn't look like a standard button
+			resultat.Importance = widget.LowImportance
 			resultat.SetIcon(l)
-			resultat.Resize(fyne.NewSize(200, 200)) // Définir l'image comme icône du bouton
-			resultat.SetText(group.Name)            // Définir le nom du groupe comme texte du bouton
+			// Set image as button icon
+			resultat.Resize(fyne.NewSize(200, 200))
+			 // Define group name as button text
+			resultat.SetText(group.Name)
 
-			// Ajouter le bouton à la liste des suggestions
+			// Add button to suggestion list
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, resultat)
 				verif = true
@@ -561,11 +563,6 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 				suggestions = append(suggestions, resultat)
 				verif = true
 			}
-
-			// if strings.Contains(strings.ToLower(group.FirstAlbum), searchText) {
-			// 	suggestions = append(suggestions, resultat)
-			// 	verif = true
-			// }
 
 			for _, date := range groupDataDates.Index {
 				if strings.Contains(strings.ToLower(date.Dates[0]), searchText) {
