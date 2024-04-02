@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/color"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -52,7 +51,16 @@ type RelationData struct {
 	} `json:"index"`
 }
 
+var listFavorit []string
 var wind222 *fyne.Container
+var card *fyne.Container
+var infoback *fyne.Container
+var listcard *fyne.Container
+var def *fyne.Container
+var window *fyne.Container
+var w fyne.Window
+var searchContainer *fyne.Container
+var upperUI *fyne.Container
 
 func fetchData(apiURL string) ([]GroupData, error) {
 	response, err := http.Get(apiURL)
@@ -102,6 +110,23 @@ func fetchDataD(apiURL string) (DatesData, error) {
 	}
 
 	return data, nil
+}
+
+func fetchDataR(apiURL string) (RelationData, error) {
+	var relations RelationData
+
+	response, err := http.Get(apiURL)
+	if err != nil {
+		return relations, err
+	}
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(&relations)
+	if err != nil {
+		return relations, err
+	}
+	return relations, nil
+
 }
 
 func calculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
@@ -222,95 +247,7 @@ func showGroupDetails(groupID int, groupData []GroupData, w fyne.Window, searchC
 	}
 }
 
-func main() {
-
-	searchContainer := container.NewVBox()
-	//Get data from the artist API
-	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
-	groupData, err := fetchData(apiURL)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	//Get data from locations API
-	apiURL2 := "https://groupietrackers.herokuapp.com/api/locations"
-	groupDataLocations, err := fetchDataL(apiURL2)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	apiURL3 := "https://groupietrackers.herokuapp.com/api/dates"
-	groupDataDates, err := fetchDataD(apiURL3)
-	if err != nil {
-		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-		return
-	}
-
-	/* 	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
-	   	groupDataRelations, err := fetchDataR(apiURL4)
-	   	if err != nil {
-	   		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
-	   		return
-	   	} */
-
-	relation, er := http.Get("https://groupietrackers.herokuapp.com/api/relation")
-	if er != nil {
-		log.Fatalf("Erreur lors de la lecture du JSON 1: %s", er)
-	}
-	defer relation.Body.Close()
-
-	var relations RelationData
-	if er := json.NewDecoder(relation.Body).Decode(&relations); er != nil {
-		log.Fatalf("Erreur lors de la lecture du JSON 2: %s", er)
-	}
-
-	//Store only the locations
-	var locations [][]string
-
-	for _, lct := range groupDataLocations.Index {
-		locations = append(locations, lct.Locations)
-	}
-
-	//Store only the locations
-	var dates [][]string
-
-	for _, lct := range groupDataDates.Index {
-		dates = append(dates, lct.Dates)
-	}
-	var stringname []string
-	var stringlocation [][]string
-	var stringdate [][]string
-	for i, group := range groupData {
-		fmt.Printf("ID: %d\n", group.ID)
-		fmt.Printf("Image: %s\n", group.Image)
-		fmt.Printf("Name: %s\n", group.Name)
-		fmt.Printf("Members: %v\n", group.Members)
-		fmt.Printf("Creation Date: %d\n", group.CreationDate)
-		fmt.Printf("First Album: %s\n", group.FirstAlbum)
-		/* 	fmt.Printf("Locations: %s\n", locations[i])
-		fmt.Printf("Concert Dates: %s\n", dates[i])
-		fmt.Printf("Relations: %s\n", group.Relations) */
-
-		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
-
-		stringname = append(stringname, group.Name)
-		stringlocation = append(stringlocation, locations[i])
-		stringdate = append(stringdate, dates[i])
-
-	}
-
-	a := app.New()
-	w := a.NewWindow("Groupie Tracker")
-
-	slider := widget.NewSlider(1900, 2024)
-
-	// Étiquette pour afficher la valeur actuelle du slider
-	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
-
-	var window *fyne.Container
-
+func makeMenu(a fyne.App) *fyne.MainMenu {
 	menu := fyne.NewMainMenu(
 
 		// Theme de le la page
@@ -331,29 +268,10 @@ func main() {
 			}),
 		),
 	)
+	return menu
+}
 
-	w.SetMainMenu(menu)
-
-	stringList := widget.NewList(
-		func() int {
-			return len(stringname)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("")
-		},
-		func(i widget.ListItemID, obj fyne.CanvasObject) {
-			label := obj.(*widget.Label)
-			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
-			label.SetText(stringname[i])
-			label.Resize(label.MinSize().Add(fyne.NewSize(100, 100))) // Largeur de 100 pixels
-		},
-	)
-	var card *fyne.Container
-	var infoback *fyne.Container
-	var listFavorit []string
-	listcard := container.NewVBox()
-	def := container.NewVBox()
-
+func makeListCard(card *fyne.Container, infoback *fyne.Container, listcard *fyne.Container, def *fyne.Container, groupData []GroupData) {
 	for _, group := range groupData {
 		var listmember string
 		for _, memb := range group.Members {
@@ -372,6 +290,7 @@ func main() {
 		var isPressed bool
 		var heartButton *widget.Button
 		// Créer un bouton avec l'image initiale du cœur
+
 		heartButton = widget.NewButton("", func() {
 
 			// Inverser l'état lors du clic sur le bouton
@@ -389,7 +308,7 @@ func main() {
 					}
 				}
 			}
-			fmt.Println(listFavorit)
+
 		})
 		heartButton.SetIcon(heartOffImage)
 		heartButton.Importance = widget.LowImportance
@@ -456,26 +375,29 @@ func main() {
 
 	}
 
-	var checkboxFilters []*widget.Check
+}
 
-	// Créer les cases à cocher pour les filtres
-	for i := 2; i <= 7; i++ {
-		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
-			return func(checked bool) {
-				// Ajouter votre logique de traitement ici en fonction de l'état de la case à cocher
-				fmt.Printf("%d membres: %t\n", members, checked)
-			}
-		}(i))
-		checkboxFilters = append(checkboxFilters, checkbox)
-	}
+func makeStringList(stringname []string, groupData []GroupData) *widget.List {
 
-	checkboxContainer := container.NewHBox()
-	label := widget.NewLabel("Nombre de membres:")
-	checkboxContainer.Add(label)
-	for _, checkbox := range checkboxFilters {
-		checkboxContainer.Add(checkbox)
-	}
+	stringList := widget.NewList(
+		func() int {
+			return len(stringname)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(i widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			label.SetText(fmt.Sprintf("%s %d", groupData[i].Name, groupData[i].ID))
+			label.SetText(stringname[i])
+			label.Resize(label.MinSize().Add(fyne.NewSize(100, 100))) // Largeur de 100 pixels
+		},
+	)
+	return stringList
+}
 
+// Fonction pour mettre à jour les résultats en fonction des cases à cocher sélectionnées
+func updateFilteredResults(w fyne.Window, groupData []GroupData, searchContainer *fyne.Container, checkboxFilters []*widget.Check) {
 	selectedMembers := make(map[int]bool)
 	for i, checkbox := range checkboxFilters {
 		if checkbox.Checked {
@@ -497,6 +419,59 @@ func main() {
 		}
 	}
 
+	// Mettre à jour le contenu de la fenêtre avec les nouveaux résultats filtrés
+	updateWindowContent(w, groupData, filteredResults, searchContainer)
+}
+
+// // Fonction pour mettre à jour le contenu de la fenêtre avec les résultats filtrés
+func updateWindowContent(w fyne.Window, groupData []GroupData, results []GroupData, searchContainer *fyne.Container) {
+	// Créer une nouvelle liste de boutons pour afficher les résultats
+	resultButtons := make([]fyne.CanvasObject, len(results))
+
+	// Parcourir les résultats et créer un bouton pour chaque élément
+	for i, result := range results {
+		// Créer un bouton personnalisé avec le nom du groupe
+		button := widget.NewButton(result.Name, func(groupID int) func() {
+			return func() {
+				// Action à effectuer lorsque le bouton est cliqué
+				showGroupDetails(groupID, groupData, w, searchContainer)
+			}
+		}(result.ID))
+		button.Importance = widget.LowImportance // Réduire l'importance pour que cela ne ressemble pas à un bouton standard
+		resultButtons[i] = button
+	}
+
+	// Créer un conteneur de type VBox pour afficher les boutons
+	content := container.NewVBox(resultButtons...)
+
+	// Mettre à jour le contenu de la fenêtre avec les résultats de la recherche
+	w.SetContent(content)
+}
+
+func makeUpperUI(stringList *widget.List, stringname []string, groupData []GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates DatesData, stringdate [][]string) *fyne.Container {
+	
+	var checkboxFilters []*widget.Check
+
+	// Créer les cases à cocher pour les filtres
+	for i := 2; i <= 7; i++ {
+		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
+			return func(checked bool) {
+				// Ajouter votre logique de traitement ici en fonction de l'état de la case à cocher
+				fmt.Printf("%d membres: %t\n", members, checked)
+			}
+		}(i))
+		checkboxFilters = append(checkboxFilters, checkbox)
+	}
+
+	checkboxContainer := container.NewHBox()
+	label := widget.NewLabel("Nombre de membres:")
+	checkboxContainer.Add(label)
+	for _, checkbox := range checkboxFilters {
+		checkboxContainer.Add(checkbox)
+	}
+
+	// updateFilteredResults(w, groupData, searchContainer, checkboxFilters)
+	
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
 		// Vérifier si stringList est nul
@@ -531,9 +506,11 @@ func main() {
 		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
 			item.(*widget.Label).SetText(filteredList[index])
 		}
+
 		stringList.UpdateItem = func(index int, items fyne.CanvasObject) {
 			items.(*widget.Label).SetText(filteredList[index])
 		}
+		// updateFilteredResults(w, groupData, searchContainer, checkboxFilters)
 		stringList.Refresh()
 	})
 
@@ -726,53 +703,28 @@ func main() {
 		researchbar.Add(cardscroll)
 		w.Resize(fyne.NewSize(800, 600))
 
-		w.SetContent(container.NewVBox(searchContainer))
-		wind := container.NewVBox(researchbar)
-		w.SetContent(container.NewVScroll(wind))
-		window = container.NewVBox(searchContainer)
-		window.Add(researchbar)
+		window = container.NewVBox(researchbar)
+
 		w.SetContent(window)
 
 		//w.SetContent(container.NewVBox(searchContainer))
 
 	})
 
-	spacer := layout.NewSpacer()
-	sugg3 := container.NewHBox(sugg2, spacer)
-
 	searchButton.OnTapped = func() {
-		// Désactiver la barre de recherche
+		// Désactiver barre de recherche
 		search.Disable()
 
 		searchText := strings.ToLower(search.Text)
 		suggestions := make([]fyne.CanvasObject, 0)
-		foundSuggestions := false
 
-		// Vérifier si un filtre est sélectionné
-		selectedMembers := make(map[int]bool)
-		for i, checkbox := range checkboxFilters {
-			if checkbox.Checked {
-				selectedMembers[i+2] = true
-			}
-		}
+		
+		// updateFilteredResults(w, groupData, searchContainer, checkboxFilters)
 
-		// Filtrer les résultats en fonction des membres sélectionnés ou récupérer tous les groupes si aucune case à cocher n'est cochée
-		filteredResults := make([]GroupData, 0)
+		verif := false
 		for _, group := range groupData {
-			if len(selectedMembers) == 0 {
-				// Aucun filtre sélectionné, ajoutez simplement tous les résultats
-				filteredResults = append(filteredResults, group)
-			} else {
-				// Vérifiez si le groupe a le nombre de membres sélectionné
-				if selectedMembers[len(group.Members)] {
-					filteredResults = append(filteredResults, group)
-				}
-			}
-		}
-
-		// Utiliser les résultats filtrés pour la recherche
-		for _, group := range filteredResults {
 			imageURL := group.Image
+
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
 			img.FillMode = canvas.ImageFillContain // Gestion du fill image
@@ -793,12 +745,12 @@ func main() {
 			// Ajouter le bouton à la liste des suggestions
 			if strings.Contains(strings.ToLower(group.Name), searchText) {
 				suggestions = append(suggestions, suggestion)
-				foundSuggestions = true
+				verif = true
 			} else {
 				for _, member := range group.Members {
 					if strings.Contains(strings.ToLower(member), searchText) {
 						suggestions = append(suggestions, suggestion)
-						foundSuggestions = true
+						verif = true
 						break
 					}
 				}
@@ -806,27 +758,32 @@ func main() {
 
 			if strings.Contains(fmt.Sprintf("%d", group.CreationDate), searchText) {
 				suggestions = append(suggestions, suggestion)
-				foundSuggestions = true
+				verif = true
 			}
+
+			// if strings.Contains(strings.ToLower(group.FirstAlbum), searchText) {
+			// 	suggestions = append(suggestions, suggestion)
+			// 	verif = true
+			// }
 
 			for _, date := range groupDataDates.Index {
 				if strings.Contains(strings.ToLower(date.Dates[0]), searchText) {
 					suggestions = append(suggestions, suggestion)
-					foundSuggestions = true
+					verif = true
 				}
 			}
 		}
 
-		// Afficher un message si la date et l'année ne correspondent à aucun artiste
-		if !foundSuggestions {
+		//Afficher un message si la date et l'annee ne correspond à aucun artiste
+		if !verif {
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
 			w.SetContent(r)
 			search.Enable()
+
 			return
 		}
 
-		// Afficher les résultats de la recherche
 		if len(suggestions) > 0 {
 			spacer := layout.NewSpacer()
 			sugg3 := container.NewHBox(sugg2, spacer)
@@ -839,10 +796,11 @@ func main() {
 			// Afficher un message si aucune suggestion n'est trouvée
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
+
 			w.SetContent(r)
 		}
 
-		// Réactiver la barre de recherche
+		//reactiver la barre de recherche
 		search.Enable()
 	}
 
@@ -932,18 +890,15 @@ func main() {
 
 	}
 
-	cardscroll := container.NewScroll(listcard)
-	cardscroll.SetMinSize(fyne.NewSize(675, 675))
-
 	sugg2 = container.NewVScroll(sugg)
 
 	sugg2.SetMinSize(fyne.NewSize(100, 100))
-	// sugg2.Hide()
-	// spacer := layout.NewSpacer()
-	// sugg3 := container.NewHBox(sugg2, spacer)
+	sugg2.Hide()
+	spacer := layout.NewSpacer()
+	sugg3 := container.NewHBox(sugg2, spacer)
 	spacer.Resize(fyne.NewSize(100, 200))
 
-	researchbar := container.NewVBox(
+	upperUI := container.NewVBox(
 		checkboxContainer,
 		favoris,
 		search,
@@ -953,14 +908,100 @@ func main() {
 		valueLabel,
 		slider,
 	)
+	return upperUI
 
-	researchbar.Add(cardscroll)
-	w.Resize(fyne.NewSize(1250, 800))
+}
 
-	window = container.NewVBox(searchContainer)
-	window.Add(researchbar)
+func main() {
+
+	searchContainer = container.NewVBox()
+	//Get data from the artist API
+	apiURL := "https://groupietrackers.herokuapp.com/api/artists"
+	groupData, err := fetchData(apiURL)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	//Get data from locations API
+	apiURL2 := "https://groupietrackers.herokuapp.com/api/locations"
+	groupDataLocations, err := fetchDataL(apiURL2)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	apiURL3 := "https://groupietrackers.herokuapp.com/api/dates"
+	groupDataDates, err := fetchDataD(apiURL3)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	apiURL4 := "https://groupietrackers.herokuapp.com/api/relation"
+	relations, err := fetchDataR(apiURL4)
+	if err != nil {
+		fmt.Println("Erreur lors de la récupération des données de l'API:", err)
+		return
+	}
+
+	//Store only the locations
+	var locations [][]string
+
+	for _, lct := range groupDataLocations.Index {
+		locations = append(locations, lct.Locations)
+	}
+
+	//Store only the locations
+	var dates [][]string
+
+	for _, lct := range groupDataDates.Index {
+		dates = append(dates, lct.Dates)
+	}
+	var stringname []string
+	var stringlocation [][]string
+	var stringdate [][]string
+	for i, group := range groupData {
+
+		fmt.Printf("SUUUUUUUUUUUUUUUUUU: %s\n", relations.Index[i])
+
+		stringname = append(stringname, group.Name)
+		stringlocation = append(stringlocation, locations[i])
+		stringdate = append(stringdate, dates[i])
+
+	}
+
+	a := app.New()
+	w = a.NewWindow("jogoat + samgod")
+
+	slider := widget.NewSlider(1900, 2024)
+
+	// Étiquette pour afficher la valeur actuelle du slider
+	valueLabel := widget.NewLabel(fmt.Sprintf("Year : %d", int(slider.Value)))
+
+	w.SetMainMenu(makeMenu(a))
+
+	stringList := makeStringList(stringname, groupData)
+
+	listcard = container.NewVBox()
+
+	def = container.NewVBox()
+
+	makeListCard(card, infoback, listcard, def, groupData)
+
+	upperUI = makeUpperUI(stringList, stringname, groupData, valueLabel, slider, groupDataDates, stringdate)
+
+	cardscroll := container.NewScroll(listcard)
+
+	cardscroll.SetMinSize(fyne.NewSize(675, 675))
+	upperUI.Add(cardscroll)
+
+	w.Resize(fyne.NewSize(800, 600))
+
+	window = container.NewVBox(upperUI)
 
 	w.SetContent(window)
 
 	w.ShowAndRun()
+
 }
