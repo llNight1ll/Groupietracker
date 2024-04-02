@@ -50,6 +50,7 @@ func main() {
 
 	//Store only the locations
 	var locations [][]string
+	
 
 	for _, lct := range groupDataLocations.Index {
 		locations = append(locations, lct.Locations)
@@ -57,6 +58,8 @@ func main() {
 
 	//Store only the locations
 	var dates [][]string
+
+	//stores only the geolocalisation
 
 	for _, lct := range groupDataDates.Index {
 		dates = append(dates, lct.Dates)
@@ -75,7 +78,7 @@ func main() {
 	}
 
 	a := app.New()
-	gui.W = a.NewWindow("jogoat + samgod")
+	gui.W = a.NewWindow("jogoat + samgod + matthis")
 
 	slider := widget.NewSlider(1900, 2024)
 
