@@ -554,7 +554,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		)
 
 		researchbar.Add(cardscroll)
-		W.Resize(fyne.NewSize(1000, 400))
+		W.Resize(fyne.NewSize(1250, 800))
 
 		Window = container.NewVBox(researchbar)
 
