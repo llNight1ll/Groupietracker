@@ -7,38 +7,47 @@ import (
 )
 
 func CalculateAverageColor(img *canvas.Image) (r uint32, g uint32, b uint32, a uint32) {
+	//Declaration of size and color variables of the image
 
 	width := int(img.MinSize().Width)
 	height := int(img.MinSize().Height)
-	var rMoyenne uint32
-	var gMoyenne uint32
-	var bMoyenne uint32
-	var aMoyenne uint32
-	var j uint32
+	var rAverage uint32
+	var gAverage uint32
+	var bAverage uint32
+	var aAverage uint32
+	var totalPixel uint32
 
+	//Analyze the color of each pixel
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 
-			colorrr := img.Image.At(x, y)
-			r, g, b, a := colorToRGB(colorrr)
-			rMoyenne += r
-			gMoyenne += g
-			bMoyenne += b
-			aMoyenne += a
-			j++
+			colorPixel := img.Image.At(x, y)
+			// Transform the type of color value from color.Color to RGB
+			r, g, b, a := colorToRGB(colorPixel)
+
+			//Add the value of r,g,b for one pixel for the average
+			rAverage += r
+			gAverage += g
+			bAverage += b
+			aAverage += a
+			totalPixel++
 
 		}
 	}
-	rMoyenne = rMoyenne / j
-	gMoyenne = gMoyenne / j
-	bMoyenne = bMoyenne / j
-	aMoyenne = aMoyenne / j
 
-	return rMoyenne, gMoyenne, bMoyenne, aMoyenne
+	//Calculate the average color
+	rAverage = rAverage / totalPixel
+	gAverage = gAverage / totalPixel
+	bAverage = bAverage / totalPixel
+	aAverage = aAverage / totalPixel
+
+	return rAverage, gAverage, bAverage, aAverage
 
 }
 
 func colorToRGB(c color.Color) (r, g, b, a uint32) {
+
+	//Transform a color.Color value into a RGBA one
 	r, g, b, a = c.RGBA()
 	r = r / 257
 	g = g / 257
