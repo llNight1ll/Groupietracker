@@ -51,6 +51,7 @@ func main() {
 
 	//Store only the locations
 	var locations [][]string
+	
 
 	for _, lct := range groupDataLocations.Index {
 		locations = append(locations, lct.Locations)
@@ -58,6 +59,8 @@ func main() {
 
 	//Store only the dates
 	var dates [][]string
+
+	//stores only the geolocalisation
 
 	for _, lct := range groupDataDates.Index {
 		dates = append(dates, lct.Dates)
@@ -77,6 +80,7 @@ func main() {
 	}
 	//Create a new app
 	a := app.New()
+	gui.W = a.NewWindow("jogoat + samgod + matthis")
 
 	gui.W = a.NewWindow("jogoat + samgod")
 

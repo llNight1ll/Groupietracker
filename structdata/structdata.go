@@ -34,3 +34,8 @@ type RelationData struct {
 		DatesLocations map[string]interface{} `json:"datesLocations"`
 	} `json:"index"`
 }
+type GeoUrl struct {
+	Lat string `json:"lat"`
+	Lon string `json:"lon"`
+	Geo string
+}
