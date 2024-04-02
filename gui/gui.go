@@ -36,7 +36,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 
 	for _, group := range groupData {
 		if group.ID == groupID {
-			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
+			// Create a text widget to display group details in the window
 			artist := widget.NewLabel(group.Name)
 			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
 			album := widget.NewLabel(group.FirstAlbum)
@@ -59,7 +59,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 				backButton,
 			)
 
-			// Placez les détails du groupe au centre de la fenêtre
+			// Place group details in the center of the window
 			content := container.NewBorder(nil, nil, nil, nil, groupDetails)
 			W.SetContent(content)
 			return
@@ -69,12 +69,13 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 
 func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
 	backButton := widget.NewButton("Retour", func() {
-		W.SetContent(container.NewVScroll(ResultWindow)) // Revenir à la liste de recherche
+		// Return to search list
+		W.SetContent(container.NewVScroll(ResultWindow))
 	})
 
 	for _, group := range groupData {
 		if group.ID == groupID {
-			// Créez un widget de texte pour afficher les détails du groupe dans la fenêtre
+			// Create a text widget to display group details in the window
 			artist := widget.NewLabel(group.Name)
 			members := widget.NewLabel(strings.Join(group.Members, ", ")) // Convertir le slice en chaîne de caractères
 			album := widget.NewLabel(group.FirstAlbum)
@@ -87,7 +88,7 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 			img.SetMinSize(fyne.NewSize(120, 120)) //Définir la taille minimum de l'image
 			img.Resize(fyne.NewSize(120, 120))
 
-			// Créez un conteneur pour afficher les détails du groupe
+			// Create a container to display group details
 			groupDetails := container.NewVBox(
 				img,
 				artist,
@@ -97,7 +98,7 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 				backButton,
 			)
 
-			// Placez les détails du groupe au centre de la fenêtre
+			// Place group details in the center of the window
 			content := container.NewBorder(nil, nil, nil, nil, groupDetails)
 			W.SetContent(content)
 			return
@@ -109,7 +110,7 @@ func MakeMenu(a fyne.App) *fyne.MainMenu {
 	//Create menu and add to it items
 	menu := fyne.NewMainMenu(
 
-		// Theme de le la page
+		// Theme of the page
 		fyne.NewMenu("Thèmes",
 			fyne.NewMenuItem("Thèmes sombre", func() {
 				a.Settings().SetTheme(theme.DarkTheme())
