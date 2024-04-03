@@ -186,7 +186,7 @@ func MakeMenu(a fyne.App) *fyne.MainMenu {
 
 		fyne.NewMenu("En savoir plus",
 			fyne.NewMenuItem("Spotify", func() {
-				lien, _ := url.Parse("https://developer.spotify.com/documentation/embeds")
+				lien, _ := url.Parse("https://open.spotify.com")
 				_ = a.OpenURL(lien)
 			}),
 		),
@@ -236,7 +236,6 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 					}
 				}
 			}
-			fmt.Println(ListFavorit)
 
 		})
 		heartButton.SetIcon(heartOffImage)
@@ -335,8 +334,54 @@ func MakeStringList(stringname []string, groupData []structdata.GroupData) *widg
 }
 
 func MakeUpperUI(stringList *widget.List, stringname []string, groupData []structdata.GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates structdata.DatesData, stringdate [][]string, a fyne.App) *fyne.Container {
+
+	var checkboxFilters []*widget.Check
+
+	// Create checkboxes for filters
+	for i := 2; i <= 7; i++ {
+		checkbox := widget.NewCheck(fmt.Sprintf("%d", i), func(members int) func(bool) {
+			return func(checked bool) {
+			}
+		}(i))
+		checkboxFilters = append(checkboxFilters, checkbox)
+	}
+
+	// Create a container to organize checkboxes
+	checkboxContainer := container.NewHBox()
+	label := widget.NewLabel("Nombre de membres:")
+	checkboxContainer.Add(label)
+
+	// Ajoute toutes les cases à cocher au conteneur
+	for _, checkbox := range checkboxFilters {
+		checkboxContainer.Add(checkbox)
+	}
+
+	// Initialize a map to store hints for selected checkboxes
+	selectedMembers := make(map[int]bool)
+	// Scroll through each checkbox to determine whether it is checked
+	for i, checkbox := range checkboxFilters {
+		if checkbox.Checked {
+			selectedMembers[i+2] = true
+		}
+	}
+
+	// Filter results by selected members
+	filteredResults := make([]structdata.GroupData, 0)
+	for _, group := range groupData {
+		if len(selectedMembers) == 0 {
+			// No filter selected, simply add all results
+			filteredResults = append(filteredResults, group)
+		} else {
+			// Check if the group has the selected number of members
+			if selectedMembers[len(group.Members)] {
+				filteredResults = append(filteredResults, group)
+			}
+		}
+	}
+
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
+
 		// Check if stringList is null
 		if W.Content == nil {
 			return
@@ -351,8 +396,8 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			}
 		}
 
-		for _, items := range stringdate {
-			for _, item := range items {
+		for _, annee := range stringdate {
+			for _, item := range annee {
 				if strings.Contains(strings.ToLower(item), strings.ToLower(search.Text)) {
 					filteredList = append(filteredList, item)
 				}
@@ -370,8 +415,30 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			item.(*widget.Label).SetText(filteredList[index])
 		}
 
-		stringList.UpdateItem = func(index int, items fyne.CanvasObject) {
-			items.(*widget.Label).SetText(filteredList[index])
+		stringList.UpdateItem = func(index int, annee fyne.CanvasObject) {
+			annee.(*widget.Label).SetText(filteredList[index])
+		}
+		// Initialize a map to store hints for selected checkboxes
+		selectedMembers := make(map[int]bool)
+		// Scroll through each checkbox to determine whether it is checked
+		for i, checkbox := range checkboxFilters {
+			if checkbox.Checked {
+				selectedMembers[i+2] = true
+			}
+		}
+
+		// Filter results by selected members
+		filteredResults := make([]structdata.GroupData, 0)
+		for _, group := range groupData {
+			if len(selectedMembers) == 0 {
+				// No filter selected, simply add all results
+				filteredResults = append(filteredResults, group)
+			} else {
+				// Check if the group has the selected number of members
+				if selectedMembers[len(group.Members)] {
+					filteredResults = append(filteredResults, group)
+				}
+			}
 		}
 		stringList.Refresh()
 	})
@@ -433,6 +500,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		}
 
 	}
+
 	//Create View Favourite button
 	favourite := widget.NewButton("View favourites", func() {
 		var favoriteCard *fyne.Container
@@ -531,7 +599,12 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	clearButton = widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		search.SetText("")
 
-		// Mettre à jour la liste avec les résultats de la recherche
+		// Reset selected filters
+		for _, checkbox := range checkboxFilters {
+			checkbox.Checked = false
+		}
+
+		// Update list with search results
 		stringList.Length = func() int {
 			return len(stringname)
 		}
@@ -540,6 +613,29 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 		}
 		stringList.UpdateItem = func(index int, item fyne.CanvasObject) {
 			item.(*widget.Label).SetText(stringname[index])
+		}
+
+		// Initialize a map to store hints for selected checkboxes
+		selectedMembers := make(map[int]bool)
+		// Scroll through each checkbox to determine whether it is checked
+		for i, checkbox := range checkboxFilters {
+			if checkbox.Checked {
+				selectedMembers[i+2] = true
+			}
+		}
+
+		// Filter results by selected members
+		filteredResults := make([]structdata.GroupData, 0)
+		for _, group := range groupData {
+			if len(selectedMembers) == 0 {
+				// No filter selected, simply add all results
+				filteredResults = append(filteredResults, group)
+			} else {
+				// Check if the group has the selected number of members
+				if selectedMembers[len(group.Members)] {
+					filteredResults = append(filteredResults, group)
+				}
+			}
 		}
 		stringList.Refresh()
 
@@ -559,6 +655,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 
 		researchbar := container.NewVBox(
 			favourite,
+			checkboxContainer,
 			search,
 			sugg3,
 			searchButton,
@@ -579,20 +676,43 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	searchButton.OnTapped = func() {
 		// Disable search bar
 		search.Disable()
-
-		searchText := strings.ToLower(search.Text)
+	
 		suggestions := make([]fyne.CanvasObject, 0)
-
 		verif := false
-		for _, group := range groupData {
-			imageURL := group.Image
+	
+		// Initialize a map to store hints for selected checkboxes
+		selectedMembers := make(map[int]bool)
+		// Scroll through each checkbox to determine whether it is checked
+		for i, checkbox := range checkboxFilters {
+			if checkbox.Checked {
+				selectedMembers[i+2] = true
+			}
+		}
 
+		// Filter results by selected members
+		filteredResults := make([]structdata.GroupData, 0)
+		for _, group := range groupData {
+			if len(selectedMembers) == 0 {
+				// No filter selected, simply add all results
+				filteredResults = append(filteredResults, group)
+			} else {
+				// Check if the group has the selected number of members
+				if selectedMembers[len(group.Members)] {
+					filteredResults = append(filteredResults, group)
+				}
+			}
+		}
+	
+		// Browse filtered search results
+		for _, group := range filteredResults {
+			imageURL := group.Image
+	
 			l, _ := fyne.LoadResourceFromURLString(imageURL)
 			img := canvas.NewImageFromResource(l)
 			img.FillMode = canvas.ImageFillContain
 			img.SetMinSize(fyne.NewSize(120, 120))
 			img.Resize(fyne.NewSize(120, 120))
-
+	
 			// Create a custom button with the group's image and name
 			resultat := widget.NewButton("", func(groupID int) func() {
 				return func() {
@@ -600,52 +720,21 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 					ShowGroupDetails(groupID, groupData, W, SearchContainer, a)
 				}
 			}(group.ID))
-			// Reduce importance so that it doesn't look like a standard button
+			// Reduce its size so that it doesn't look like a standard button
 			resultat.Importance = widget.LowImportance
 			resultat.SetIcon(l)
 			// Set image as button icon
 			resultat.Resize(fyne.NewSize(200, 200))
 			// Define group name as button text
 			resultat.SetText(group.Name)
-
+	
 			// Add button to suggestion list
-			if strings.Contains(strings.ToLower(group.Name), searchText) {
-				suggestions = append(suggestions, resultat)
-				verif = true
-			} else {
-				for _, member := range group.Members {
-					if strings.Contains(strings.ToLower(member), searchText) {
-						suggestions = append(suggestions, resultat)
-						verif = true
-						break
-					}
-				}
-			}
-
-			if strings.Contains(fmt.Sprintf("%d", group.CreationDate), searchText) {
-				suggestions = append(suggestions, resultat)
-				verif = true
-			}
-
-			for _, date := range groupDataDates.Index {
-				if strings.Contains(strings.ToLower(date.Dates[0]), searchText) {
-					suggestions = append(suggestions, resultat)
-					verif = true
-				}
-			}
+			suggestions = append(suggestions, resultat)
+			verif = true
 		}
-
-		//Display message if date and year don't match any artist
-		if !verif {
-			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
-			r.Add(clearButton)
-			W.SetContent(r)
-			search.Enable()
-
-			return
-		}
-
-		if len(suggestions) > 0 {
+	
+		// Display suggestions or a message if no results are found
+		if verif {
 			spacer := layout.NewSpacer()
 			sugg3 := container.NewHBox(suggestionScroll, spacer)
 			spacer.Resize(fyne.NewSize(100, 200))
@@ -657,13 +746,13 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			// Display a message if no results are found
 			r := container.NewVBox(widget.NewLabel("Aucun groupe trouvé avec ce nom."))
 			r.Add(clearButton)
-
 			W.SetContent(r)
 		}
-
-		//reactivate search bar
+	
+		// Reactivate search bar
 		search.Enable()
 	}
+	
 
 	search.OnSubmitted = func(text string) {
 		// Start search when "Enter" key is pressed
@@ -764,6 +853,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	//Create a container whi contains all the features
 	UpperUI := container.NewVBox(
 		favourite,
+		checkboxContainer,
 		search,
 		sugg3,
 		searchButton,
@@ -833,7 +923,7 @@ func GetSpotifyData(name string, a fyne.App) *fyne.Container {
 			trackinfo := container.NewHBox(trackName, img2)
 			spotifyLink := fmt.Sprintf("https://open.spotify.com/track/%s", track.ID)
 
-			tracklink := widget.NewButton("Listen in Spotify", func() {
+			tracklink := widget.NewButton("Listen on Spotify", func() {
 				lien, _ := url.Parse(spotifyLink)
 				_ = a.OpenURL(lien)
 
@@ -849,6 +939,4 @@ func GetSpotifyData(name string, a fyne.App) *fyne.Container {
 	} else {
 		return nil
 	}
-	// Afficher la fenêtre
-
 }
