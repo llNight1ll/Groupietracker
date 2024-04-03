@@ -1,11 +1,13 @@
 package gui
 
 import (
+	"context"
 	"fmt"
 	"groupie/colorAnalysis"
 	"groupie/structdata"
 	"image/color"
 	"net/url"
+	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -14,6 +16,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 // Declaration of global variables
@@ -53,17 +57,17 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 				membersLabel += member
 			}
 			members := widget.NewLabelWithStyle("Membres: \n"+membersLabel, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
-			
+
 			album := widget.NewLabel(group.FirstAlbum)
 			albumText := album.Text
 			// Create a label widget to display ""First album released" and the band name with the date of the first album released
-			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de " + group.Name + " sorti le: " + albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de "+group.Name+" sorti le: "+albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 
 			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
 			// Get the text value of creationDate
 			creationDateText := creationDate.Text
 			// Create a label widget to display "Career start" and the group name with creation date
-			carriere := widget.NewLabelWithStyle("Debut de carrière de " + group.Name + " en "+ creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			carriere := widget.NewLabelWithStyle("Debut de carrière de "+group.Name+" en "+creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			imageURL := group.Image
 
 			r, _ := fyne.LoadResourceFromURLString(imageURL)
@@ -71,15 +75,19 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 			img.FillMode = canvas.ImageFillContain // Image fill management
 			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
 			img.Resize(fyne.NewSize(350, 350))
+			trackinfo := GetSpotifyData(group.Name)
+			info := container.NewHBox(container.NewVBox(
+				artistCenter,
+				members,
+				firstAlbum,
+				carriere,
+			), container.NewVScroll(trackinfo))
 
 			// Create a container to display group details
 			groupDetails := container.NewVBox(
 				title,
 				img,
-				artistCenter,
-				members,
-				firstAlbum,
-				carriere,
+				info,
 				backButton,
 			)
 
@@ -89,7 +97,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 			return
 		}
 	}
-	
+
 }
 
 func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
@@ -118,17 +126,17 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 				membersLabel += member
 			}
 			members := widget.NewLabelWithStyle("Membres: \n"+membersLabel, fyne.TextAlignLeading, fyne.TextStyle{Bold: true, Italic: true})
-			
+
 			album := widget.NewLabel(group.FirstAlbum)
 			albumText := album.Text
 			// Create a label widget to display ""First album released" and the band name with the date of the first album released
-			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de " + group.Name + " sorti le: " + albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			firstAlbum := widget.NewLabelWithStyle("Premier album sorti de "+group.Name+" sorti le: "+albumText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 
 			creationDate := widget.NewLabel(fmt.Sprintf("%d", group.CreationDate))
 			// Get the text value of creationDate
 			creationDateText := creationDate.Text
 			// Create a label widget to display "Career start" and the group name with creation date
-			carriere := widget.NewLabelWithStyle("Debut de carrière de " + group.Name + " en "+ creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+			carriere := widget.NewLabelWithStyle("Debut de carrière de "+group.Name+" en "+creationDateText, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 			imageURL := group.Image
 
 			r, _ := fyne.LoadResourceFromURLString(imageURL)
@@ -137,14 +145,19 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
 			img.Resize(fyne.NewSize(350, 350))
 
-			// Create a container to display group details
-			groupDetails := container.NewVBox(
-				title,
-				img,
+			trackinfo := GetSpotifyData(group.Name)
+			info := container.NewHBox(container.NewVBox(
 				artistCenter,
 				members,
 				firstAlbum,
 				carriere,
+			), container.NewVScroll(trackinfo))
+
+			// Create a container to display group details
+			groupDetails := container.NewVBox(
+				title,
+				img,
+				info,
 				backButton,
 			)
 
@@ -760,4 +773,73 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	)
 
 	return UpperUI
+}
+
+func GetSpotifyData(name string) *fyne.Container {
+
+	// Config a client
+	config := &clientcredentials.Config{
+		ClientID:     "670da40f1af74c558d0644f13b2b4898",
+		ClientSecret: "2faaac80d70e48a7a9df5fbfee5f127d",
+		TokenURL:     spotify.TokenURL,
+	}
+	client := config.Client(context.Background())
+
+	// Use the client to use spotify
+	spotifyClient := spotify.NewClient(client)
+
+	artistName := name
+
+	// Research the page of an artist
+	result, err := spotifyClient.Search(artistName, spotify.SearchTypeArtist)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to search artist: %v\n", err)
+	}
+
+	// Get back the ID of the first artist found
+	if len(result.Artists.Artists) > 0 {
+		artistID := result.Artists.Artists[0].ID
+
+		//Get the top 10 tracks of an artist
+
+		tracks, err := spotifyClient.GetArtistsTopTracks(artistID, "US")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to retrieve artist's top tracks: %v\n", err)
+		}
+
+		//Create the container of the spotify informations
+		imgtrck := container.NewVBox()
+		topTracksContainer := container.NewVBox()
+		topTracksContainer.Add(widget.NewLabel("Top tracks :"))
+
+		for _, track := range tracks {
+			//Contains the track's name
+			trackName := widget.NewLabel(track.Name)
+
+			//Get track informations
+			infotrack, err := spotifyClient.GetTrack(track.ID)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to retrieve artist's top tracks: %v\n", err)
+			}
+			//Contain the image of the cover of the track
+			imglink := infotrack.Album.Images[0].URL
+			r, _ := fyne.LoadResourceFromURLString(imglink)
+			img2 := canvas.NewImageFromResource(r)
+			img2.FillMode = canvas.ImageFillContain // Image fill management
+			img2.SetMinSize(fyne.NewSize(50, 50))   // Set minimum image size
+			img2.Resize(fyne.NewSize(50, 50))
+			imgtrck.Add(img2)
+
+			trackinfo := container.NewHBox(trackName, img2)
+			topTracksContainer.Add(trackinfo)
+
+		}
+
+		return topTracksContainer
+
+	} else {
+		return nil
+	}
+	// Afficher la fenêtre
+
 }
