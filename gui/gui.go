@@ -89,6 +89,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 			return
 		}
 	}
+	
 }
 
 func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
