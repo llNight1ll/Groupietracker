@@ -1,1 +1,1 @@
-Ne pas mettre l'application en plein écran car cela créer des porblèmes d'affichages
+Ne pas mettre l'application en plein écran car cela créer des problèmes d'affichages
