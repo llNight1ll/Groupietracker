@@ -32,7 +32,7 @@ var W fyne.Window
 var SearchContainer *fyne.Container
 var UpperUI *fyne.Container
 
-func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container, Window *fyne.Container) {
+func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container, Window *fyne.Container, a fyne.App) {
 	backButton := widget.NewButton("Retour", func() {
 		W.SetContent(Window)
 	})
@@ -75,7 +75,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 			img.FillMode = canvas.ImageFillContain // Image fill management
 			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
 			img.Resize(fyne.NewSize(350, 350))
-			trackinfo := GetSpotifyData(group.Name)
+			trackinfo := GetSpotifyData(group.Name, a)
 			info := container.NewHBox(container.NewVBox(
 				artistCenter,
 				members,
@@ -100,7 +100,7 @@ func ShowGroupDetails2(groupID int, groupData []structdata.GroupData, W fyne.Win
 
 }
 
-func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container) {
+func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Window, SearchContainer *fyne.Container, a fyne.App) {
 	backButton := widget.NewButton("Retour", func() {
 		// Retour à la liste de recherche
 		W.SetContent(container.NewVScroll(ResultWindow))
@@ -145,7 +145,7 @@ func ShowGroupDetails(groupID int, groupData []structdata.GroupData, W fyne.Wind
 			img.SetMinSize(fyne.NewSize(350, 350)) // Set minimum image size
 			img.Resize(fyne.NewSize(350, 350))
 
-			trackinfo := GetSpotifyData(group.Name)
+			trackinfo := GetSpotifyData(group.Name, a)
 			info := container.NewHBox(container.NewVBox(
 				artistCenter,
 				members,
@@ -194,7 +194,7 @@ func MakeMenu(a fyne.App) *fyne.MainMenu {
 	return menu
 }
 
-func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne.Container, Def *fyne.Container, groupData []structdata.GroupData) {
+func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne.Container, Def *fyne.Container, groupData []structdata.GroupData, a fyne.App) {
 	//Range artists API to collect info about them
 	for _, group := range groupData {
 		var listmember string
@@ -249,7 +249,7 @@ func MakeListCard(Card *fyne.Container, Infoback *fyne.Container, Listcard *fyne
 		viewDetail := widget.NewButton("View Detail", func() {
 			GrpID := groupID
 
-			ShowGroupDetails2(GrpID, groupData, W, SearchContainer, Window)
+			ShowGroupDetails2(GrpID, groupData, W, SearchContainer, Window, a)
 
 		})
 		//Get and resize the group image
@@ -334,7 +334,7 @@ func MakeStringList(stringname []string, groupData []structdata.GroupData) *widg
 	return stringList
 }
 
-func MakeUpperUI(stringList *widget.List, stringname []string, groupData []structdata.GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates structdata.DatesData, stringdate [][]string) *fyne.Container {
+func MakeUpperUI(stringList *widget.List, stringname []string, groupData []structdata.GroupData, valueLabel *widget.Label, slider *widget.Slider, groupDataDates structdata.DatesData, stringdate [][]string, a fyne.App) *fyne.Container {
 	search := widget.NewEntry()
 	searchButton := widget.NewButton("Rechercher", func() {
 		// Check if stringList is null
@@ -379,7 +379,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	stringList.OnSelected = func(id widget.ListItemID) {
 		groupID := groupData[id].ID
 		// Switch the search list and the search bar to the function
-		ShowGroupDetails(groupID, groupData, W, SearchContainer)
+		ShowGroupDetails(groupID, groupData, W, SearchContainer, a)
 	}
 
 	//Create suggestion container
@@ -399,7 +399,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 					label := group.Name + "        - Groupe"
 					h := widget.NewButton(label, func(groupID int) func() {
 						return func() {
-							ShowGroupDetails2(groupID, groupData, W, SearchContainer, Window) // Passer SearchContainer à la fonction
+							ShowGroupDetails2(groupID, groupData, W, SearchContainer, Window, a) // Passer SearchContainer à la fonction
 						}
 					}(group.ID))
 					h.Importance = widget.LowImportance
@@ -412,7 +412,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 						label2 := groupMember + "         - Member"
 						h := widget.NewButton(label2, func(groupID int) func() {
 							return func() {
-								ShowGroupDetails2(groupID, groupData, W, SearchContainer, Window) // Passer SearchContainer à la fonction
+								ShowGroupDetails2(groupID, groupData, W, SearchContainer, Window, a) // Passer SearchContainer à la fonction
 							}
 
 						}(group.ID))
@@ -597,7 +597,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 			resultat := widget.NewButton("", func(groupID int) func() {
 				return func() {
 					// Pass SearchContainer to function
-					ShowGroupDetails(groupID, groupData, W, SearchContainer)
+					ShowGroupDetails(groupID, groupData, W, SearchContainer, a)
 				}
 			}(group.ID))
 			// Reduce importance so that it doesn't look like a standard button
@@ -775,7 +775,7 @@ func MakeUpperUI(stringList *widget.List, stringname []string, groupData []struc
 	return UpperUI
 }
 
-func GetSpotifyData(name string) *fyne.Container {
+func GetSpotifyData(name string, a fyne.App) *fyne.Container {
 
 	// Config a client
 	config := &clientcredentials.Config{
@@ -831,7 +831,16 @@ func GetSpotifyData(name string) *fyne.Container {
 			imgtrck.Add(img2)
 
 			trackinfo := container.NewHBox(trackName, img2)
-			topTracksContainer.Add(trackinfo)
+			spotifyLink := fmt.Sprintf("https://open.spotify.com/track/%s", track.ID)
+
+			tracklink := widget.NewButton("Listen in Spotify", func() {
+				lien, _ := url.Parse(spotifyLink)
+				_ = a.OpenURL(lien)
+
+			})
+			tranckInfoandLink := container.NewVBox(trackinfo, tracklink)
+
+			topTracksContainer.Add(tranckInfoandLink)
 
 		}
 

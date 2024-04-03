@@ -103,9 +103,9 @@ func main() {
 	gui.Def = container.NewVBox()
 
 	//Make the card list of the home page
-	gui.MakeListCard(gui.Card, gui.Infoback, gui.Listcard, gui.Def, groupData)
+	gui.MakeListCard(gui.Card, gui.Infoback, gui.Listcard, gui.Def, groupData, a)
 	//Make the Ui on top of the card list
-	gui.UpperUI = gui.MakeUpperUI(stringList, stringname, groupData, valueLabel, slider, groupDataDates, stringdate)
+	gui.UpperUI = gui.MakeUpperUI(stringList, stringname, groupData, valueLabel, slider, groupDataDates, stringdate, a)
 
 	cardscroll := container.NewScroll(gui.Listcard)
 
